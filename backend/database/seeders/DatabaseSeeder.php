@@ -12,5 +12,8 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
         ]);
+
+        // Create the BOS_OWNER_* account when configured.
+        app(\App\Services\SetupService::class)->ensureOwnerFromEnv();
     }
 }

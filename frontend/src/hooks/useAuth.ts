@@ -42,6 +42,13 @@ export function useAuth() {
     mutationFn: (data: RegisterPayload) => authApi.register(data),
     onSuccess: ({ data: res }) => {
       if (!res.success) { toast.error(res.message || 'Registration failed'); return }
+      if (res.data.token) {
+        // Email verification disabled on the server: signed in straight away.
+        authStore.setAuth(res.data.user, res.data.token)
+        toast.success('Account created!')
+        navigate('/app/dashboard')
+        return
+      }
       toast.success('Account created! Please verify your email.')
       navigate('/verify-otp', { state: { email: res.data.user.email, type: 'email_verification' } })
     },

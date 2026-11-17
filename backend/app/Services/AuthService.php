@@ -33,12 +33,19 @@ class AuthService
                 'status'   => 'pending',
             ]);
 
+            // Without email verification the account is usable immediately.
+            if (!config('bos.require_email_verification')) {
+                $user->update(['status' => 'active', 'email_verified' => true, 'email_verified_at' => now()]);
+            }
+
             $this->tenants->create(['name' => $data['name'] . "'s Organization"], $user);
 
             return $user;
         });
 
-        $this->sendOtp($user, 'email_verification');
+        if ($user->status === 'pending') {
+            $this->sendOtp($user, 'email_verification');
+        }
         $this->audit->log('user.registered', "New user registered: {$user->email}", $user);
 
         return $user;

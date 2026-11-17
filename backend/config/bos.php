@@ -5,6 +5,17 @@ return [
     // Allow sales/adjustments to drive stock below zero.
     'allow_negative_stock' => env('BOS_ALLOW_NEGATIVE_STOCK', false),
 
+    // First owner account, created automatically when no user with this email exists
+    // (on db:seed, bos:setup, or the first login attempt). Handy on hosts without a shell.
+    'owner' => [
+        'email'    => env('BOS_OWNER_EMAIL'),
+        'password' => env('BOS_OWNER_PASSWORD'),
+        'name'     => env('BOS_OWNER_NAME', 'Owner'),
+    ],
+
+    // When false, sign-ups are active immediately (no emailed code). Use until SMTP is configured.
+    'require_email_verification' => (bool) env('BOS_REQUIRE_EMAIL_VERIFICATION', true),
+
     // Default weekend (Carbon dayOfWeek: 0 = Sunday … 6 = Saturday). Override per business via settings.weekend_days.
     'weekend_days' => [0, 6],
 

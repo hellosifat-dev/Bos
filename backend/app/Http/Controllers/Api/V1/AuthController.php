@@ -12,6 +12,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuthService;
 use App\Services\PermissionService;
+use App\Services\SetupService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,16 +36,24 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = $this->auth->register($request->validated());
+        $active = $user->status === 'active';
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful. Please verify your email.',
-            'data'    => ['user' => $this->userPayload($user)],
+            'message' => $active ? 'Registration successful.' : 'Registration successful. Please verify your email.',
+            'data'    => [
+                'user'         => $this->userPayload($user),
+                'token'        => $active ? $user->createToken('web', ['*'])->plainTextToken : null,
+                'requires_otp' => !$active,
+            ],
         ], 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
+        // First-run self-healing: seed permissions and create the BOS_OWNER_* account if needed.
+        app(SetupService::class)->bootstrap();
+
         $result = $this->auth->login($request->validated());
 
         return response()->json([
