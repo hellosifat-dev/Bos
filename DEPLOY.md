@@ -106,6 +106,37 @@ sudo bash /var/www/bos/deploy/update.sh
 
 ---
 
+## Docker / প্ল্যাটফর্ম (Sifat.cloud ইত্যাদি) — সবচেয়ে সহজ
+
+repo-র মূল ফোল্ডারে একটি **`Dockerfile`** আছে। এটি একটি কন্টেইনারেই ফ্রন্টএন্ড (React) আর ব্যাকএন্ড (Laravel API) দুটো চালায়।
+প্ল্যাটফর্মে বিল্ড টাইপ **Dockerfile / Docker** দিন (Static বা Node নয়) — না হলে শুধু ফ্রন্টএন্ড স্ট্যাটিক সাইট হিসেবে চলবে, লগইন কাজ করবে না।
+
+**প্রয়োজনীয় Environment Variable:**
+
+| Variable | উদাহরণ | মন্তব্য |
+|---|---|---|
+| `DATABASE_URL` | `pgsql://user:pass@host:5432/bos` | PostgreSQL ডাটাবেস (অথবা `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` আলাদা করে) |
+| `APP_KEY` | `base64:...` | **একবার তৈরি করে স্থায়ীভাবে রাখুন:** `echo "base64:$(openssl rand -base64 32)"` |
+| `APP_URL` | `https://bos.apps.sifat.cloud` | সাইটের আসল ঠিকানা |
+| `BOS_OWNER_EMAIL` / `BOS_OWNER_PASSWORD` | | প্রথম লগইন অ্যাকাউন্ট (উপরের অংশ দেখুন) |
+| `BOS_REQUIRE_EMAIL_VERIFICATION` | `false` | ঐচ্ছিক, ইমেইল সেটআপের আগে |
+| `PORT` | `8080` | কন্টেইনার এই পোর্টে শোনে (প্ল্যাটফর্ম সাধারণত নিজে দেয়) |
+
+কন্টেইনার চালু হলে নিজেই ডাটাবেসের জন্য অপেক্ষা করে, migrate, seed আর মালিক অ্যাকাউন্ট তৈরি করে। হেলথ চেক: `/up`।
+লগ প্ল্যাটফর্মের কন্টেইনার লগেই দেখা যায় (`LOG_CHANNEL=stderr`)।
+
+নিজের মেশিনে পরীক্ষা:
+
+```bash
+docker build -t bos .
+```
+
+```bash
+docker run -p 8080:8080 -e DATABASE_URL="pgsql://bos:pass@host.docker.internal:5432/bos" -e APP_KEY="base64:..." -e BOS_OWNER_EMAIL=you@example.com -e BOS_OWNER_PASSWORD=MyStrongPass123 bos
+```
+
+---
+
 ## প্ল্যাটফর্মে ডিপ্লয় (শেল ছাড়া, শুধু Environment Variable দিয়ে)
 
 Sifat.cloud বা এমন যেকোনো প্ল্যাটফর্মে, যেখানে GitHub repo সিলেক্ট করে ডিপ্লয় হয় আর

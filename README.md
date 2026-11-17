@@ -51,7 +51,7 @@ bos/
 
 ## Getting Started
 
-> **Production:** see [DEPLOY.md](DEPLOY.md) — one-command setup for Debian 12/13 (`deploy/install-debian.sh`).
+> **Production:** see [DEPLOY.md](DEPLOY.md) — a root `Dockerfile` (SPA + API in one container) for PaaS/Docker hosts, or one-command setup for Debian 12/13 (`deploy/install-debian.sh`).
 
 ### Backend
 
