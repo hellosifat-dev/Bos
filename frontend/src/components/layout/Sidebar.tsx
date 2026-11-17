@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Settings, ChevronDown, ChevronRight, Building2, Shield, FileText, X, Menu,
   Package, Layers, Tags, Ruler, Warehouse, Boxes, Lock, ShoppingCart, CreditCard, ClipboardList, UserCheck,
+  Briefcase, Network, BadgeCheck, CalendarCheck, CalendarOff, Banknote,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
@@ -37,6 +38,16 @@ const navItems: NavItem[] = [
     label: 'Inventory', icon: Warehouse, children: [
       { label: 'Stock', icon: Boxes, href: '/app/inventory', module: 'inventory' },
       { label: 'Warehouses', icon: Warehouse, href: '/app/warehouses', module: 'warehouses' },
+    ],
+  },
+  {
+    label: 'HR', icon: Briefcase, children: [
+      { label: 'Employees', icon: Users, href: '/app/employees', module: 'employees' },
+      { label: 'Departments', icon: Network, href: '/app/departments', module: 'employees' },
+      { label: 'Designations', icon: BadgeCheck, href: '/app/designations', module: 'employees' },
+      { label: 'Attendance', icon: CalendarCheck, href: '/app/attendance', module: 'attendance' },
+      { label: 'Leave', icon: CalendarOff, href: '/app/leave', module: 'leave' },
+      { label: 'Payroll', icon: Banknote, href: '/app/payroll', module: 'payroll' },
     ],
   },
   {

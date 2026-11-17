@@ -10,7 +10,13 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\DepartmentController;
+use App\Http\Controllers\Api\V1\DesignationController;
+use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\LeaveController;
+use App\Http\Controllers\Api\V1\PayrollController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PosController;
@@ -136,6 +142,29 @@ Route::prefix('v1')->group(function () {
 
             Route::get('pos/products',  [PosController::class, 'products'])->middleware('permission:view,pos');
             Route::post('pos/checkout', [PosController::class, 'checkout'])->middleware('permission:create,pos');
+
+            // ── Phase 4: HR & Payroll ───────────────────────────────────
+            crud('departments', DepartmentController::class, 'employees');
+            crud('designations', DesignationController::class, 'employees');
+            crud('employees', EmployeeController::class, 'employees');
+
+            Route::get('attendance',          [AttendanceController::class, 'sheet'])->middleware('permission:view,attendance');
+            Route::get('attendance/summary',  [AttendanceController::class, 'summary'])->middleware('permission:view,attendance');
+            Route::post('attendance',         [AttendanceController::class, 'save'])->middleware('permission:create,attendance');
+
+            Route::get('leave-requests',               [LeaveController::class, 'index'])->middleware('permission:view,leave');
+            Route::post('leave-requests',              [LeaveController::class, 'store'])->middleware('permission:create,leave');
+            Route::post('leave-requests/{id}/approve', [LeaveController::class, 'approve'])->middleware('permission:approve,leave');
+            Route::post('leave-requests/{id}/reject',  [LeaveController::class, 'reject'])->middleware('permission:reject,leave');
+            Route::delete('leave-requests/{id}',       [LeaveController::class, 'destroy'])->middleware('permission:create,leave');
+
+            Route::get('payroll',                          [PayrollController::class, 'index'])->middleware('permission:view,payroll');
+            Route::post('payroll',                         [PayrollController::class, 'store'])->middleware('permission:create,payroll');
+            Route::get('payroll/{id}',                     [PayrollController::class, 'show'])->middleware('permission:view,payroll');
+            Route::put('payroll/{id}/payslips/{slipId}',   [PayrollController::class, 'updatePayslip'])->middleware('permission:edit,payroll');
+            Route::post('payroll/{id}/approve',            [PayrollController::class, 'approve'])->middleware('permission:approve,payroll');
+            Route::post('payroll/{id}/pay',                [PayrollController::class, 'pay'])->middleware('permission:approve,payroll');
+            Route::delete('payroll/{id}',                  [PayrollController::class, 'destroy'])->middleware('permission:create,payroll');
 
             // Audit Logs
             Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('permission:view,audit_logs');

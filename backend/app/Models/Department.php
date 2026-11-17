@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\BusinessScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Department extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BusinessScoped, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'business_id',
@@ -32,10 +33,6 @@ class Department extends Model
         ];
     }
 
-    public function business(): BelongsTo
-    {
-        return $this->belongsTo(Business::class);
-    }
 
     public function branch(): BelongsTo
     {
@@ -65,6 +62,11 @@ class Department extends Model
     public function designations(): HasMany
     {
         return $this->hasMany(Designation::class);
+    }
+
+    public function employees(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Employee::class);
     }
 
     public function scopeActive($query)

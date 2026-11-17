@@ -5,6 +5,9 @@ return [
     // Allow sales/adjustments to drive stock below zero.
     'allow_negative_stock' => env('BOS_ALLOW_NEGATIVE_STOCK', false),
 
+    // Default weekend (Carbon dayOfWeek: 0 = Sunday … 6 = Saturday). Override per business via settings.weekend_days.
+    'weekend_days' => [0, 6],
+
 
     /*
     |--------------------------------------------------------------------------

@@ -42,6 +42,15 @@ const OrderFormPage   = lazyNamed(() => import('@/pages/sales/OrderFormPage'), '
 const OrderDetailPage = lazyNamed(() => import('@/pages/sales/OrderDetailPage'), 'OrderDetailPage')
 const PosPage         = lazyNamed(() => import('@/pages/sales/PosPage'), 'PosPage')
 const CustomersPage   = lazyNamed(() => import('@/pages/sales/CustomersPage'), 'CustomersPage')
+const hr = () => import('@/pages/hr/HrPages')
+const EmployeesPage     = lazyNamed(hr, 'EmployeesPage')
+const DepartmentsPage   = lazyNamed(hr, 'DepartmentsPage')
+const DesignationsPage  = lazyNamed(hr, 'DesignationsPage')
+const AttendancePage    = lazyNamed(() => import('@/pages/hr/AttendancePage'), 'AttendancePage')
+const LeavePage         = lazyNamed(() => import('@/pages/hr/LeavePage'), 'LeavePage')
+const payroll = () => import('@/pages/hr/PayrollPages')
+const PayrollPage       = lazyNamed(payroll, 'PayrollPage')
+const PayrollDetailPage = lazyNamed(payroll, 'PayrollDetailPage')
 const InventoryPage  = lazyNamed(() => import('@/pages/inventory/InventoryPage'), 'InventoryPage')
 
 /** Route element guarded by a permission slug. */
@@ -196,6 +205,15 @@ export const router = createBrowserRouter([
       { path: 'orders/:id',      element: guard('orders.view', <OrderDetailPage />) },
       { path: 'orders/:id/edit', element: guard('orders.edit', <OrderFormPage />) },
       { path: 'customers',       element: guard('customers.view', <CustomersPage />) },
+
+      // Phase 4 — HR & Payroll
+      { path: 'employees',    element: guard('employees.view', <EmployeesPage />) },
+      { path: 'departments',  element: guard('employees.view', <DepartmentsPage />) },
+      { path: 'designations', element: guard('employees.view', <DesignationsPage />) },
+      { path: 'attendance',   element: guard('attendance.view', <AttendancePage />) },
+      { path: 'leave',        element: guard('leave.view', <LeavePage />) },
+      { path: 'payroll',      element: guard('payroll.view', <PayrollPage />) },
+      { path: 'payroll/:id',  element: guard('payroll.view', <PayrollDetailPage />) },
 
       // Account security
       { path: 'settings/security', element: <Wrap><SecurityPage /></Wrap> },

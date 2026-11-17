@@ -161,7 +161,7 @@ GET    /api/v1/audit-logs
   - Products, categories, brands, units, warehouses, stock levels, adjustments, transfers, movement history
 - **Phase 3 — Sales & POS** ✅
   - Customers, orders (draft → complete), invoices, payments, partial returns/refunds, POS terminal with barcode entry
-- **Phase 4 — HR & Payroll**
-  - Employees, attendance, payroll, leave management
+- **Phase 4 — HR & Payroll** ✅
+  - Departments, designations, employees, daily attendance sheet + monthly summary, leave requests/approval, monthly payroll with absence & unpaid-leave deductions, payslips
 - **Phase 5 — Accounting & Reports**
   - Chart of accounts, journal entries, financial reports
