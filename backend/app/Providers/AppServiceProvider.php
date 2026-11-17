@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Password-reset links point at the SPA.
         ResetPassword::createUrlUsing(fn ($user, string $token) =>
-            rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/')
+            rtrim(config('app.frontend_url'), '/')
             . '/reset-password?token=' . $token . '&email=' . urlencode($user->getEmailForPasswordReset())
         );
 

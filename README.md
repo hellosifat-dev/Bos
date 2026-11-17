@@ -8,7 +8,7 @@ A multi-tenant, multi-branch SaaS platform for managing every part of a business
 
 | Layer     | Technology                              |
 |-----------|-----------------------------------------|
-| Backend   | Laravel 11, PHP 8.2, Sanctum Auth       |
+| Backend   | Laravel 12, PHP 8.2+, Sanctum Auth      |
 | Frontend  | React 18 + Vite 5 + TypeScript          |
 | Database  | PostgreSQL                              |
 | State     | Zustand (global) + React Query (server) |
@@ -50,6 +50,8 @@ bos/
 ---
 
 ## Getting Started
+
+> **Production:** see [DEPLOY.md](DEPLOY.md) — one-command setup for Debian 12/13 (`deploy/install-debian.sh`).
 
 ### Backend
 

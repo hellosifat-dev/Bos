@@ -31,7 +31,7 @@ return new class extends Migration
             $table->boolean('phone_verified')->default(false);
             $table->timestamp('phone_verified_at')->nullable();
             $table->boolean('two_factor_enabled')->default(false);
-            $table->string('two_factor_secret')->nullable();
+            $table->text('two_factor_secret')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
             $table->boolean('is_super_admin')->default(false);
             $table->timestamp('last_login_at')->nullable();

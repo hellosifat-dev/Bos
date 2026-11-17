@@ -30,6 +30,9 @@ return [
     */
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Public URL of the SPA (used for password-reset links and CORS).
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
