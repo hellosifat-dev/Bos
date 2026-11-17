@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Settings, ChevronDown, ChevronRight, Building2, Shield, FileText, X, Menu,
   Package, Layers, Tags, Ruler, Warehouse, Boxes, Lock, ShoppingCart, CreditCard, ClipboardList, UserCheck,
   Briefcase, Network, BadgeCheck, CalendarCheck, CalendarOff, Banknote,
+  Calculator, Receipt, BookOpen, NotebookPen, BarChart3,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
@@ -48,6 +49,14 @@ const navItems: NavItem[] = [
       { label: 'Attendance', icon: CalendarCheck, href: '/app/attendance', module: 'attendance' },
       { label: 'Leave', icon: CalendarOff, href: '/app/leave', module: 'leave' },
       { label: 'Payroll', icon: Banknote, href: '/app/payroll', module: 'payroll' },
+    ],
+  },
+  {
+    label: 'Accounting', icon: Calculator, children: [
+      { label: 'Expenses', icon: Receipt, href: '/app/expenses', module: 'expenses' },
+      { label: 'Chart of accounts', icon: BookOpen, href: '/app/accounts', module: 'accounting' },
+      { label: 'Journal', icon: NotebookPen, href: '/app/journal', module: 'accounting' },
+      { label: 'Reports', icon: BarChart3, href: '/app/reports', module: 'reports' },
     ],
   },
   {

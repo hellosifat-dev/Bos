@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class HrService
 {
+    public function __construct(private AccountingService $accounting) {}
+
     public function weekendDays(Business $business): array
     {
         return $business->settings['weekend_days'] ?? config('bos.weekend_days', [0, 6]);
@@ -207,7 +209,10 @@ class HrService
         if ($run->status !== 'approved') {
             throw ValidationException::withMessages(['status' => ['Approve the payroll before paying it.']]);
         }
-        $run->update(['status' => 'paid', 'paid_at' => now()]);
-        return $run;
+        return DB::transaction(function () use ($run) {
+            $run->update(['status' => 'paid', 'paid_at' => now()]);
+            $this->accounting->recordPayroll($run);
+            return $run;
+        });
     }
 }

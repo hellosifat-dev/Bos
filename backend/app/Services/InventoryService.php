@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class InventoryService
 {
+    public function __construct(private AccountingService $accounting) {}
+
     /** The business's default warehouse; created on first use. */
     public function defaultWarehouse(Business $business): Warehouse
     {
@@ -64,7 +66,7 @@ class InventoryService
 
             $stock->update(['quantity' => $balance]);
 
-            return StockMovement::create([
+            $movement = StockMovement::create([
                 'tenant_id'      => $product->tenant_id,
                 'business_id'    => $product->business_id,
                 'product_id'     => $product->id,
@@ -78,6 +80,10 @@ class InventoryService
                 'note'           => $note,
                 'user_id'        => auth()->id(),
             ]);
+
+            $this->accounting->recordStockMovement($movement);
+
+            return $movement;
         });
     }
 

@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class SalesService
 {
-    public function __construct(private InventoryService $inventory) {}
+    public function __construct(private InventoryService $inventory, private AccountingService $accounting) {}
 
     /**
      * Create an order. $data: customer_id?, warehouse_id?, branch_id?, channel, notes?, discount? (order level),
@@ -149,6 +149,7 @@ class SalesService
             }
 
             $order->update(['status' => 'completed', 'completed_at' => now()]);
+            $this->accounting->recordSale($order);
             $this->refreshPaymentStatus($order);
 
             return $order;
@@ -191,6 +192,7 @@ class SalesService
                 'received_by' => auth()->id(),
             ]);
             $order->increment('paid_total', round($amount, 2));
+            $this->accounting->recordPayment($payment);
             $this->refreshPaymentStatus($order->refresh());
 
             return $payment;
@@ -216,6 +218,7 @@ class SalesService
 
             $warehouse = $order->warehouse ?? $this->inventory->defaultWarehouse($order->business);
             $value = 0.0;
+            $returnedQty = [];
 
             foreach ($lines as $idx => $line) {
                 $item = $items->get($line['item_id']);
@@ -229,6 +232,7 @@ class SalesService
                     $this->inventory->move($item->product, $warehouse, $qty, 'sale_return', $order, "Return {$order->number}", (float) $item->unit_cost);
                 }
                 $item->increment('returned_quantity', $qty);
+                $returnedQty[$item->id] = ($returnedQty[$item->id] ?? 0) + $qty;
                 $value += (float) $item->line_total * $qty / (float) $item->quantity;
             }
 
@@ -240,12 +244,13 @@ class SalesService
 
             $value = round($value, 2);
             $order->increment('returned_total', $value);
+            $this->accounting->recordReturn($order, $value, $returnedQty);
             $order->refresh();
 
             // Refund whatever was paid beyond the reduced order value.
             $refund = round(max($order->netPaid() - $order->netTotal(), 0), 2);
             if ($refund > 0) {
-                $order->payments()->create([
+                $refundPayment = $order->payments()->create([
                     'tenant_id'   => $order->tenant_id,
                     'business_id' => $order->business_id,
                     'type'        => 'refund',
@@ -256,6 +261,7 @@ class SalesService
                     'received_by' => auth()->id(),
                 ]);
                 $order->increment('refunded_total', $refund);
+                $this->accounting->recordPayment($refundPayment);
             }
 
             $fullyReturned = $order->items()->get()->every(fn ($i) => (float) $i->returned_quantity >= (float) $i->quantity);

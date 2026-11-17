@@ -51,6 +51,12 @@ const LeavePage         = lazyNamed(() => import('@/pages/hr/LeavePage'), 'Leave
 const payroll = () => import('@/pages/hr/PayrollPages')
 const PayrollPage       = lazyNamed(payroll, 'PayrollPage')
 const PayrollDetailPage = lazyNamed(payroll, 'PayrollDetailPage')
+const accounts = () => import('@/pages/accounting/AccountsPage')
+const AccountsPage = lazyNamed(accounts, 'AccountsPage')
+const LedgerPage   = lazyNamed(accounts, 'LedgerPage')
+const JournalPage  = lazyNamed(() => import('@/pages/accounting/JournalPage'), 'JournalPage')
+const ExpensesPage = lazyNamed(() => import('@/pages/accounting/ExpensesPage'), 'ExpensesPage')
+const ReportsPage  = lazyNamed(() => import('@/pages/accounting/ReportsPage'), 'ReportsPage')
 const InventoryPage  = lazyNamed(() => import('@/pages/inventory/InventoryPage'), 'InventoryPage')
 
 /** Route element guarded by a permission slug. */
@@ -214,6 +220,13 @@ export const router = createBrowserRouter([
       { path: 'leave',        element: guard('leave.view', <LeavePage />) },
       { path: 'payroll',      element: guard('payroll.view', <PayrollPage />) },
       { path: 'payroll/:id',  element: guard('payroll.view', <PayrollDetailPage />) },
+
+      // Phase 5 — Accounting & Reports
+      { path: 'accounts',            element: guard('accounting.view', <AccountsPage />) },
+      { path: 'accounts/:id/ledger', element: guard('accounting.view', <LedgerPage />) },
+      { path: 'journal',             element: guard('accounting.view', <JournalPage />) },
+      { path: 'expenses',            element: guard('expenses.view', <ExpensesPage />) },
+      { path: 'reports',             element: guard('reports.view', <ReportsPage />) },
 
       // Account security
       { path: 'settings/security', element: <Wrap><SecurityPage /></Wrap> },

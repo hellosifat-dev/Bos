@@ -29,7 +29,7 @@ bos/
 │   │   ├── Models/
 │   │   └── Services/
 │   ├── database/
-│   │   ├── migrations/   # 14 migrations
+│   │   ├── migrations/   # core + one migration per phase
 │   │   └── seeders/      # Permissions + Roles
 │   ├── routes/api.php
 │   └── config/bos.php
@@ -98,6 +98,25 @@ Every business table has a `tenant_id` column. The `TenantMiddleware` reads the 
 ### RBAC
 Permissions are stored as `module.action` slugs (e.g. `branches.create`). Roles are assigned at business or branch scope; business owners and tenant owners implicitly hold every permission. Business-scoped routes are guarded with `permission:<action>,<module>` middleware. `PermissionService::userCan()` checks the user's roles against the required permission for the given scope. The frontend `usePermission` hook mirrors this with wildcard `*` support.
 
+### Business-scoped modules (Phases 2–5)
+Operational models use the `BusinessScoped` trait: when `BusinessMiddleware` has resolved the
+`X-Business-ID` context, queries are automatically filtered to that business and new rows inherit its
+`tenant_id` / `business_id`. Most resources are served by the generic `CrudController`, and on the
+frontend by the config-driven `ResourcePage` component.
+
+### Accounting
+`AccountingService` keeps a double-entry ledger. A default chart of accounts is created with each
+business, and these events post balanced journal entries automatically:
+
+| Event | Debit | Credit |
+|-------|-------|--------|
+| Order completed | Accounts Receivable; COGS | Sales Revenue; Sales Tax Payable; Inventory |
+| Payment / refund | Cash or Bank / Receivable | Receivable / Cash or Bank |
+| Return | Sales Returns; Tax Payable; Inventory | Receivable; COGS |
+| Opening stock / adjustment | Inventory (or Inventory Adjustments) | Opening Equity (or Inventory) |
+| Payroll paid | Salaries & Wages | Bank; Payroll Deductions Payable |
+| Expense approved | Expense account | Cash / Bank / Payable |
+
 ### Multi-Branch
 `Tenant → Business → Branch` hierarchy. The `X-Business-ID` and `X-Branch-ID` headers scope API calls. The Zustand store tracks the current business and branch, and Axios automatically attaches the headers.
 
@@ -151,6 +170,30 @@ GET    /api/v1/permissions
 GET    /api/v1/audit-logs
 ```
 
+### Phases 2–5 (all require `X-Tenant-ID` + `X-Business-ID` and the matching permission)
+
+```
+CRUD   /api/v1/{categories,brands,units,products,warehouses}
+GET    /api/v1/inventory                 POST /api/v1/inventory/{adjust,transfer}
+GET    /api/v1/inventory/movements       GET  /api/v1/inventory/products/{id}
+
+CRUD   /api/v1/customers
+GET    /api/v1/orders                    POST /api/v1/orders            PUT /api/v1/orders/{id}
+POST   /api/v1/orders/{id}/{complete,cancel,payments,return}
+GET    /api/v1/pos/products              POST /api/v1/pos/checkout
+
+CRUD   /api/v1/{departments,designations,employees}
+GET    /api/v1/attendance?date=          POST /api/v1/attendance        GET /api/v1/attendance/summary?month=
+GET    /api/v1/leave-requests            POST /api/v1/leave-requests    POST /api/v1/leave-requests/{id}/{approve,reject}
+GET    /api/v1/payroll                   POST /api/v1/payroll           PUT /api/v1/payroll/{id}/payslips/{slip}
+POST   /api/v1/payroll/{id}/{approve,pay}
+
+CRUD   /api/v1/{accounts,expenses}       GET  /api/v1/accounts/{id}/ledger
+POST   /api/v1/expenses/{id}/{approve,reject}
+GET    /api/v1/journal-entries           POST /api/v1/journal-entries
+GET    /api/v1/reports/{profit-loss,balance-sheet,trial-balance,sales,inventory,expenses}
+```
+
 ---
 
 ## Phase Roadmap
@@ -163,5 +206,5 @@ GET    /api/v1/audit-logs
   - Customers, orders (draft → complete), invoices, payments, partial returns/refunds, POS terminal with barcode entry
 - **Phase 4 — HR & Payroll** ✅
   - Departments, designations, employees, daily attendance sheet + monthly summary, leave requests/approval, monthly payroll with absence & unpaid-leave deductions, payslips
-- **Phase 5 — Accounting & Reports**
-  - Chart of accounts, journal entries, financial reports
+- **Phase 5 — Accounting & Reports** ✅
+  - Chart of accounts, double-entry journal (auto-posted from sales, payments, returns, stock adjustments, payroll and expenses), manual entries, account ledgers, expenses with approval, P&L, balance sheet, trial balance, sales / inventory / expense reports with CSV export

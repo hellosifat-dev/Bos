@@ -56,6 +56,9 @@ class BusinessService
         // Create headquarters branch
         $this->createHeadquartersBranch($business, $data);
 
+        // Default chart of accounts.
+        app(AccountingService::class)->ensureChart($business);
+
         // The creator becomes the business owner.
         $ownerRole = Role::where('slug', 'business_owner')->where('is_system', true)->first();
         if ($ownerRole) {

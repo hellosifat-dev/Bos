@@ -22,7 +22,7 @@ export interface Field {
   type?: FieldType
   options?: Option[]
   /** Load select options from an API list endpoint (fetched with ?all=1). */
-  optionsFrom?: { endpoint: string; label?: (row: any) => string }
+  optionsFrom?: { endpoint: string; label?: (row: any) => string; filter?: (row: any) => boolean }
   required?: boolean
   createOnly?: boolean
   placeholder?: string
@@ -49,6 +49,7 @@ export interface ResourceConfig<T> {
   headerActions?: ReactNode
   rowActions?: (row: T) => ReactNode
   canDelete?: (row: T) => boolean
+  canEdit?: (row: T) => boolean
 }
 
 type Row = { id: string | number }
@@ -61,7 +62,7 @@ function useOptions(field: Field) {
     staleTime: 60_000,
   })
   if (field.options) return field.options
-  return (data ?? []).map((r) => ({ value: String(r.id), label: field.optionsFrom?.label?.(r) ?? r.name }))
+  return (data ?? []).filter((r) => field.optionsFrom?.filter?.(r) ?? true).map((r) => ({ value: String(r.id), label: field.optionsFrom?.label?.(r) ?? r.name }))
 }
 
 function FieldInput({ field, value, error, onChange }: {
@@ -219,7 +220,7 @@ export function ResourcePage<T extends Row>(config: ResourceConfig<T>) {
       cell: (row) => (
         <div className="flex justify-end gap-1">
           {config.rowActions?.(row)}
-          {canEdit && (
+          {canEdit && (config.canEdit?.(row) ?? true) && (
             <Button variant="ghost" size="sm" aria-label="Edit" onClick={(e) => { e.stopPropagation(); openEdit(row) }}>
               <Pencil className="h-4 w-4" />
             </Button>

@@ -10,7 +10,11 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\ExpenseController;
+use App\Http\Controllers\Api\V1\JournalController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\DesignationController;
@@ -165,6 +169,27 @@ Route::prefix('v1')->group(function () {
             Route::post('payroll/{id}/approve',            [PayrollController::class, 'approve'])->middleware('permission:approve,payroll');
             Route::post('payroll/{id}/pay',                [PayrollController::class, 'pay'])->middleware('permission:approve,payroll');
             Route::delete('payroll/{id}',                  [PayrollController::class, 'destroy'])->middleware('permission:create,payroll');
+
+            // ── Phase 5: Accounting & Reports ───────────────────────────
+            crud('accounts', AccountController::class, 'accounting');
+            Route::get('accounts/{id}/ledger', [AccountController::class, 'ledger'])->middleware('permission:view,accounting');
+
+            Route::get('journal-entries',      [JournalController::class, 'index'])->middleware('permission:view,accounting');
+            Route::get('journal-entries/{id}', [JournalController::class, 'show'])->middleware('permission:view,accounting');
+            Route::post('journal-entries',     [JournalController::class, 'store'])->middleware('permission:create,accounting');
+
+            crud('expenses', ExpenseController::class, 'expenses');
+            Route::post('expenses/{id}/approve', [ExpenseController::class, 'approve'])->middleware('permission:approve,expenses');
+            Route::post('expenses/{id}/reject',  [ExpenseController::class, 'reject'])->middleware('permission:reject,expenses');
+
+            Route::prefix('reports')->middleware('permission:view,reports')->group(function () {
+                Route::get('profit-loss',   [ReportController::class, 'profitLoss']);
+                Route::get('balance-sheet', [ReportController::class, 'balanceSheet']);
+                Route::get('trial-balance', [ReportController::class, 'trialBalance']);
+                Route::get('sales',         [ReportController::class, 'sales']);
+                Route::get('inventory',     [ReportController::class, 'inventory']);
+                Route::get('expenses',      [ReportController::class, 'expenses']);
+            });
 
             // Audit Logs
             Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('permission:view,audit_logs');
