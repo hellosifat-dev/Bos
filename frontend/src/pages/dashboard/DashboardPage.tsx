@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, Users, Shield, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Building2, Users, CheckCircle2, ArrowRight, ShoppingCart, TrendingUp, Wallet, AlertTriangle, UserCheck } from 'lucide-react'
+import { money } from '@/utils/format'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Card, CardHeader } from '@/components/ui/Card'
@@ -9,15 +10,20 @@ import { useAuthStore } from '@/stores/authStore'
 import { apiClient }    from '@/api/client'
 import type { AuditLog } from '@/types'
 
-interface Stats { branches: number; users: number; roles: number; setup_progress: number }
+interface Stats {
+  branches: number; users: number; roles: number; setup_progress: number
+  products: number; customers: number; low_stock: number
+  sales_today: number; orders_today: number; sales_month: number; receivables: number
+}
 
-function StatTile({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
+function StatTile({ label, value, icon, hint }: { label: string; value: string | number; icon: React.ReactNode; hint?: string }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-gray-500">{label}</p>
           <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+          {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
         </div>
         <div className="rounded-lg bg-primary-50 p-2.5 text-primary-600">{icon}</div>
       </div>
@@ -70,10 +76,14 @@ export function DashboardPage() {
         <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatTile label="Branches"       value={stats?.branches ?? 0} icon={<Building2 className="h-5 w-5" />} />
-          <StatTile label="Team members"   value={stats?.users ?? 0}    icon={<Users className="h-5 w-5" />} />
-          <StatTile label="Roles"          value={stats?.roles ?? 0}    icon={<Shield className="h-5 w-5" />} />
-          <StatTile label="Setup progress" value={`${stats?.setup_progress ?? 0}%`} icon={<CheckCircle2 className="h-5 w-5" />} />
+          <StatTile label="Sales today"     value={money(stats?.sales_today ?? 0)} icon={<ShoppingCart className="h-5 w-5" />} hint={`${stats?.orders_today ?? 0} orders`} />
+          <StatTile label="Sales this month" value={money(stats?.sales_month ?? 0)} icon={<TrendingUp className="h-5 w-5" />} />
+          <StatTile label="Receivables"     value={money(stats?.receivables ?? 0)} icon={<Wallet className="h-5 w-5" />} />
+          <StatTile label="Low stock items" value={stats?.low_stock ?? 0} icon={<AlertTriangle className="h-5 w-5" />} hint={`${stats?.products ?? 0} products`} />
+          <StatTile label="Customers"       value={stats?.customers ?? 0} icon={<UserCheck className="h-5 w-5" />} />
+          <StatTile label="Branches"        value={stats?.branches ?? 0} icon={<Building2 className="h-5 w-5" />} />
+          <StatTile label="Team members"    value={stats?.users ?? 0}    icon={<Users className="h-5 w-5" />} />
+          <StatTile label="Setup progress"  value={`${stats?.setup_progress ?? 0}%`} icon={<CheckCircle2 className="h-5 w-5" />} />
         </div>
       )}
 

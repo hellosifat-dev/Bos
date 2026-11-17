@@ -10,7 +10,10 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\UnitController;
 use App\Http\Controllers\Api\V1\WarehouseController;
@@ -118,6 +121,21 @@ Route::prefix('v1')->group(function () {
             Route::get('inventory/products/{id}', [InventoryController::class, 'product'])->middleware('permission:view,inventory');
             Route::post('inventory/adjust',       [InventoryController::class, 'adjust'])->middleware('permission:adjust,inventory');
             Route::post('inventory/transfer',     [InventoryController::class, 'transfer'])->middleware('permission:transfer,inventory');
+
+            // ── Phase 3: Sales & POS ────────────────────────────────────
+            crud('customers', CustomerController::class, 'customers');
+
+            Route::get('orders',                  [OrderController::class, 'index'])->middleware('permission:view,orders');
+            Route::post('orders',                 [OrderController::class, 'store'])->middleware('permission:create,orders');
+            Route::get('orders/{id}',             [OrderController::class, 'show'])->middleware('permission:view,orders');
+            Route::put('orders/{id}',             [OrderController::class, 'update'])->middleware('permission:edit,orders');
+            Route::post('orders/{id}/complete',   [OrderController::class, 'complete'])->middleware('permission:edit,orders');
+            Route::post('orders/{id}/cancel',     [OrderController::class, 'cancel'])->middleware('permission:cancel,orders');
+            Route::post('orders/{id}/payments',   [OrderController::class, 'addPayment'])->middleware('permission:create,payments');
+            Route::post('orders/{id}/return',     [OrderController::class, 'returnItems'])->middleware('permission:refund,orders');
+
+            Route::get('pos/products',  [PosController::class, 'products'])->middleware('permission:view,pos');
+            Route::post('pos/checkout', [PosController::class, 'checkout'])->middleware('permission:create,pos');
 
             // Audit Logs
             Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('permission:view,audit_logs');

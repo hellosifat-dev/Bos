@@ -75,3 +75,10 @@
   .badge-gray    { @apply badge bg-gray-100 text-gray-700; }
   .badge-purple  { @apply badge bg-purple-100 text-purple-700; }
 }
+
+/* Printing: only the invoice/receipt is printed. */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 16px; }
+}

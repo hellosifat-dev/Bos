@@ -159,8 +159,8 @@ GET    /api/v1/audit-logs
   - Auth, Tenants, Businesses, Branches, Users, RBAC, Audit Logs
 - **Phase 2 — Products & Inventory** ✅
   - Products, categories, brands, units, warehouses, stock levels, adjustments, transfers, movement history
-- **Phase 3 — Sales & POS**
-  - Orders, invoices, point-of-sale terminal, customers
+- **Phase 3 — Sales & POS** ✅
+  - Customers, orders (draft → complete), invoices, payments, partial returns/refunds, POS terminal with barcode entry
 - **Phase 4 — HR & Payroll**
   - Employees, attendance, payroll, leave management
 - **Phase 5 — Accounting & Reports**

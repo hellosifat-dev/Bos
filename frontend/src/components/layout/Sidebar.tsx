@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Settings, ChevronDown, ChevronRight, Building2, Shield, FileText, X, Menu,
-  Package, Layers, Tags, Ruler, Warehouse, Boxes, Lock,
+  Package, Layers, Tags, Ruler, Warehouse, Boxes, Lock, ShoppingCart, CreditCard, ClipboardList, UserCheck,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
@@ -18,6 +18,13 @@ interface NavItem {
 // Items appear only when the user holds `<module>.view`; empty groups are hidden.
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard' },
+  {
+    label: 'Sales', icon: ShoppingCart, children: [
+      { label: 'POS', icon: CreditCard, href: '/app/pos', module: 'pos' },
+      { label: 'Orders', icon: ClipboardList, href: '/app/orders', module: 'orders' },
+      { label: 'Customers', icon: UserCheck, href: '/app/customers', module: 'customers' },
+    ],
+  },
   {
     label: 'Products', icon: Package, children: [
       { label: 'Product list', icon: Package, href: '/app/products', module: 'products' },

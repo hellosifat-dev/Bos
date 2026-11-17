@@ -36,6 +36,12 @@ const CategoriesPage = lazyNamed(catalog, 'CategoriesPage')
 const BrandsPage     = lazyNamed(catalog, 'BrandsPage')
 const UnitsPage      = lazyNamed(catalog, 'UnitsPage')
 const WarehousesPage = lazyNamed(catalog, 'WarehousesPage')
+const sales = () => import('@/pages/sales/OrdersPage')
+const OrdersPage      = lazyNamed(sales, 'OrdersPage')
+const OrderFormPage   = lazyNamed(() => import('@/pages/sales/OrderFormPage'), 'OrderFormPage')
+const OrderDetailPage = lazyNamed(() => import('@/pages/sales/OrderDetailPage'), 'OrderDetailPage')
+const PosPage         = lazyNamed(() => import('@/pages/sales/PosPage'), 'PosPage')
+const CustomersPage   = lazyNamed(() => import('@/pages/sales/CustomersPage'), 'CustomersPage')
 const InventoryPage  = lazyNamed(() => import('@/pages/inventory/InventoryPage'), 'InventoryPage')
 
 /** Route element guarded by a permission slug. */
@@ -182,6 +188,14 @@ export const router = createBrowserRouter([
       { path: 'units',      element: guard('products.view', <UnitsPage />) },
       { path: 'warehouses', element: guard('warehouses.view', <WarehousesPage />) },
       { path: 'inventory',  element: guard('inventory.view', <InventoryPage />) },
+
+      // Phase 3 — Sales & POS
+      { path: 'pos',             element: guard('pos.view', <PosPage />) },
+      { path: 'orders',          element: guard('orders.view', <OrdersPage />) },
+      { path: 'orders/new',      element: guard('orders.create', <OrderFormPage />) },
+      { path: 'orders/:id',      element: guard('orders.view', <OrderDetailPage />) },
+      { path: 'orders/:id/edit', element: guard('orders.edit', <OrderFormPage />) },
+      { path: 'customers',       element: guard('customers.view', <CustomersPage />) },
 
       // Account security
       { path: 'settings/security', element: <Wrap><SecurityPage /></Wrap> },
