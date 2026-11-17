@@ -8,7 +8,25 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\BrandController;
+use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\UnitController;
+use App\Http\Controllers\Api\V1\WarehouseController;
 use Illuminate\Support\Facades\Route;
+
+/** Register permission-guarded CRUD routes for a business-scoped resource. */
+if (!function_exists('crud')) {
+    function crud(string $uri, string $controller, string $module): void
+    {
+        Route::get($uri, [$controller, 'index'])->middleware("permission:view,{$module}");
+        Route::post($uri, [$controller, 'store'])->middleware("permission:create,{$module}");
+        Route::get("{$uri}/{id}", [$controller, 'show'])->middleware("permission:view,{$module}");
+        Route::put("{$uri}/{id}", [$controller, 'update'])->middleware("permission:edit,{$module}");
+        Route::delete("{$uri}/{id}", [$controller, 'destroy'])->middleware("permission:delete,{$module}");
+    }
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +105,19 @@ Route::prefix('v1')->group(function () {
 
             // Permissions (read-only)
             Route::get('permissions', [PermissionController::class, 'index'])->middleware('permission:view,roles');
+
+            // ── Phase 2: Products & Inventory ───────────────────────────
+            crud('categories', CategoryController::class, 'categories');
+            crud('brands', BrandController::class, 'brands');
+            crud('units', UnitController::class, 'products');
+            crud('products', ProductController::class, 'products');
+            crud('warehouses', WarehouseController::class, 'warehouses');
+
+            Route::get('inventory',               [InventoryController::class, 'index'])->middleware('permission:view,inventory');
+            Route::get('inventory/movements',     [InventoryController::class, 'movements'])->middleware('permission:view,inventory');
+            Route::get('inventory/products/{id}', [InventoryController::class, 'product'])->middleware('permission:view,inventory');
+            Route::post('inventory/adjust',       [InventoryController::class, 'adjust'])->middleware('permission:adjust,inventory');
+            Route::post('inventory/transfer',     [InventoryController::class, 'transfer'])->middleware('permission:transfer,inventory');
 
             // Audit Logs
             Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('permission:view,audit_logs');

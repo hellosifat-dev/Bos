@@ -20,7 +20,7 @@ export function AppLayout() {
       {/* Main content */}
       <div className={clsx(
         'flex flex-col min-h-screen transition-all duration-300',
-        'lg:' + (collapsed ? 'pl-[68px]' : 'pl-64')
+        collapsed ? 'lg:pl-[68px]' : 'lg:pl-64'
       )}>
         <Header
           onMobileMenuOpen={() => setMobileOpen(true)}

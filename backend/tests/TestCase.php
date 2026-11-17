@@ -13,6 +13,8 @@ abstract class TestCase extends BaseTestCase
     public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
     {
         $this->app['auth']->forgetGuards();
+        $this->app->forgetInstance('current_business');
+        $this->app->forgetInstance('current_tenant');
 
         return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
     }

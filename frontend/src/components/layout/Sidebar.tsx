@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Settings, ChevronDown, ChevronRight, Building2, Shield, FileText, X, Menu,
+  Package, Layers, Tags, Ruler, Warehouse, Boxes, Lock,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,16 +15,41 @@ interface NavItem {
   module?: string
 }
 
-// Phase 1 navigation. Items appear only when the user holds `<module>.view`.
+// Items appear only when the user holds `<module>.view`; empty groups are hidden.
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard' },
-  { label: 'Businesses', icon: Building2, href: '/app/businesses' },
-  { label: 'Branches', icon: Building2, href: '/app/branches', module: 'branches' },
-  { label: 'Users', icon: Users, href: '/app/users', module: 'users' },
-  { label: 'Roles', icon: Shield, href: '/app/roles', module: 'roles' },
-  { label: 'Audit Log', icon: FileText, href: '/app/audit-logs', module: 'audit_logs' },
-  { label: 'Security', icon: Settings, href: '/app/settings/security' },
+  {
+    label: 'Products', icon: Package, children: [
+      { label: 'Product list', icon: Package, href: '/app/products', module: 'products' },
+      { label: 'Categories', icon: Layers, href: '/app/categories', module: 'categories' },
+      { label: 'Brands', icon: Tags, href: '/app/brands', module: 'brands' },
+      { label: 'Units', icon: Ruler, href: '/app/units', module: 'products' },
+    ],
+  },
+  {
+    label: 'Inventory', icon: Warehouse, children: [
+      { label: 'Stock', icon: Boxes, href: '/app/inventory', module: 'inventory' },
+      { label: 'Warehouses', icon: Warehouse, href: '/app/warehouses', module: 'warehouses' },
+    ],
+  },
+  {
+    label: 'Settings', icon: Settings, children: [
+      { label: 'Businesses', icon: Building2, href: '/app/businesses' },
+      { label: 'Branches', icon: Building2, href: '/app/branches', module: 'branches' },
+      { label: 'Users', icon: Users, href: '/app/users', module: 'users' },
+      { label: 'Roles', icon: Shield, href: '/app/roles', module: 'roles' },
+      { label: 'Audit log', icon: FileText, href: '/app/audit-logs', module: 'audit_logs' },
+      { label: 'Security', icon: Lock, href: '/app/settings/security' },
+    ],
+  },
 ]
+
+function visibleItems(items: NavItem[], permissions: string[]): NavItem[] {
+  const allowed = (i: NavItem) => !i.module || permissions.includes('*') || permissions.includes(`${i.module}.view`)
+  return items
+    .map((i) => (i.children ? { ...i, children: i.children.filter(allowed) } : i))
+    .filter((i) => (i.children ? i.children.length > 0 : allowed(i)))
+}
 
 interface SidebarProps {
   collapsed: boolean
@@ -144,7 +170,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-          {navItems.filter((item) => !item.module || permissions.includes('*') || permissions.includes(`${item.module}.view`)).map((item) => (
+          {visibleItems(navItems, permissions).map((item) => (
             <NavItemComponent key={item.label} item={item} collapsed={collapsed} />
           ))}
         </nav>

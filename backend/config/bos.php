@@ -2,6 +2,10 @@
 
 return [
 
+    // Allow sales/adjustments to drive stock below zero.
+    'allow_negative_stock' => env('BOS_ALLOW_NEGATIVE_STOCK', false),
+
+
     /*
     |--------------------------------------------------------------------------
     | BOS Platform Configuration

@@ -28,6 +28,21 @@ const RoleCreatePage        = lazy(() => import('@/pages/roles/RoleCreatePage'))
 const SecurityPage          = lazy(() => import('@/pages/settings/SecurityPage').then((m) => ({ default: m.SecurityPage })))
 const RoleEditPage          = lazy(() => import('@/pages/roles/RoleEditPage'))
 const PermissionMatrixPage  = lazy(() => import('@/pages/roles/PermissionMatrixPage').then((m) => ({ default: m.PermissionMatrixPage })))
+const lazyNamed = (loader: () => Promise<Record<string, unknown>>, name: string) =>
+  lazy(() => loader().then((m) => ({ default: m[name] as React.ComponentType })))
+const catalog = () => import('@/pages/catalog/CatalogPages')
+const ProductsPage   = lazyNamed(catalog, 'ProductsPage')
+const CategoriesPage = lazyNamed(catalog, 'CategoriesPage')
+const BrandsPage     = lazyNamed(catalog, 'BrandsPage')
+const UnitsPage      = lazyNamed(catalog, 'UnitsPage')
+const WarehousesPage = lazyNamed(catalog, 'WarehousesPage')
+const InventoryPage  = lazyNamed(() => import('@/pages/inventory/InventoryPage'), 'InventoryPage')
+
+/** Route element guarded by a permission slug. */
+const guard = (permission: string, el: React.ReactNode) => (
+  <PrivateRoute permission={permission}><Wrap>{el}</Wrap></PrivateRoute>
+)
+
 const AuditLogPage          = lazy(() => import('@/pages/audit/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
 
 const Wrap = ({ children }: { children: React.ReactNode }) => (
@@ -159,6 +174,14 @@ export const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+
+      // Phase 2 — Products & Inventory
+      { path: 'products',   element: guard('products.view', <ProductsPage />) },
+      { path: 'categories', element: guard('categories.view', <CategoriesPage />) },
+      { path: 'brands',     element: guard('brands.view', <BrandsPage />) },
+      { path: 'units',      element: guard('products.view', <UnitsPage />) },
+      { path: 'warehouses', element: guard('warehouses.view', <WarehousesPage />) },
+      { path: 'inventory',  element: guard('inventory.view', <InventoryPage />) },
 
       // Account security
       { path: 'settings/security', element: <Wrap><SecurityPage /></Wrap> },

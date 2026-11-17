@@ -20,8 +20,8 @@ export function Header({ onMobileMenuOpen, sidebarCollapsed }: HeaderProps) {
     <header
       className={clsx(
         'fixed right-0 top-0 z-30 flex h-16 items-center border-b border-gray-200 bg-white px-4 transition-all duration-300',
-        sidebarCollapsed ? 'left-[68px]' : 'left-64',
-        'left-0 lg:left-auto' // mobile: full width
+        'left-0',
+        sidebarCollapsed ? 'lg:left-[68px]' : 'lg:left-64'
       )}
     >
       {/* Mobile menu button */}
@@ -46,7 +46,6 @@ export function Header({ onMobileMenuOpen, sidebarCollapsed }: HeaderProps) {
         {/* Notifications */}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100">
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
         </button>
 
         {/* User menu */}
@@ -73,18 +72,18 @@ export function Header({ onMobileMenuOpen, sidebarCollapsed }: HeaderProps) {
 
               <Menu.Item>
                 {({ active }) => (
-                  <button onClick={() => navigate('/app/profile')}
+                  <button onClick={() => navigate('/app/settings/security')}
                     className={clsx('flex w-full items-center gap-2 px-3 py-2 text-sm', active ? 'bg-gray-50 text-gray-900' : 'text-gray-700')}>
-                    <User className="h-4 w-4" /> My Profile
+                    <User className="h-4 w-4" /> Account security
                   </button>
                 )}
               </Menu.Item>
 
               <Menu.Item>
                 {({ active }) => (
-                  <button onClick={() => navigate('/app/settings')}
+                  <button onClick={() => navigate('/app/businesses')}
                     className={clsx('flex w-full items-center gap-2 px-3 py-2 text-sm', active ? 'bg-gray-50 text-gray-900' : 'text-gray-700')}>
-                    <Settings className="h-4 w-4" /> Settings
+                    <Settings className="h-4 w-4" /> Businesses
                   </button>
                 )}
               </Menu.Item>

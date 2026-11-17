@@ -40,3 +40,13 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong.'
   const first = data?.errors ? Object.values(data.errors)[0]?.[0] : undefined
   return first || data?.message || e?.message || fallback
 }
+
+/** Format an amount in the current business currency. */
+export function money(amount: number | string | null | undefined): string {
+  // Read lazily to avoid a circular import at module load.
+  const raw = localStorage.getItem('bos-auth')
+  let currency = 'USD'
+  try { currency = JSON.parse(raw ?? '{}')?.state?.currentBusiness?.currency || 'USD' } catch { /* ignore */ }
+  const n = Number(amount ?? 0)
+  try { return formatCurrency(Number.isFinite(n) ? n : 0, currency) } catch { return n.toFixed(2) }
+}

@@ -157,8 +157,8 @@ GET    /api/v1/audit-logs
 
 - **Phase 1 — Foundation** ✅ (this codebase)
   - Auth, Tenants, Businesses, Branches, Users, RBAC, Audit Logs
-- **Phase 2 — Products & Inventory** (next)
-  - Product catalogue, categories, units, stock management
+- **Phase 2 — Products & Inventory** ✅
+  - Products, categories, brands, units, warehouses, stock levels, adjustments, transfers, movement history
 - **Phase 3 — Sales & POS**
   - Orders, invoices, point-of-sale terminal, customers
 - **Phase 4 — HR & Payroll**
