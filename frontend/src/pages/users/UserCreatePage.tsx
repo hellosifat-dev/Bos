@@ -27,7 +27,7 @@ export function UserCreatePage() {
 
   const { data: rolesData } = useQuery({
     queryKey: ['roles'],
-    queryFn:  () => rolesApi.list().then((r) => r.data),
+    queryFn:  () => rolesApi.list().then((r) => r.data.data),
   })
 
   const roleOptions = (rolesData ?? []).map((r: { id: string; name: string }) => ({

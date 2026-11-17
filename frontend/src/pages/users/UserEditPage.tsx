@@ -32,13 +32,13 @@ export default function UserEditPage() {
 
   const { data: userResp, isLoading: userLoading, isError } = useQuery({
     queryKey: ['user', id],
-    queryFn: () => usersApi.get(id!),
+    queryFn: () => usersApi.get(id!).then((r) => r.data),
     enabled: !!id,
   })
 
   const { data: rolesResp } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => rolesApi.list(),
+    queryFn: () => rolesApi.list().then((r) => r.data),
   })
 
   const user = userResp?.data

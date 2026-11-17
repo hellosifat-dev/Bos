@@ -29,10 +29,9 @@ export function PrivateRoute({ children, permission }: PrivateRouteProps) {
 
   useEffect(() => {
     if (data) {
-      const res = data as { data?: { user: Parameters<typeof setAuth>[0]; token: string } }
-      if (res.data?.user && res.data.token) {
-        setAuth(res.data.user, res.data.token)
-      }
+      const user = data.data.data
+      const currentToken = localStorage.getItem('bos_token')
+      if (user && currentToken) setAuth(user, currentToken)
     }
   }, [data, setAuth])
 

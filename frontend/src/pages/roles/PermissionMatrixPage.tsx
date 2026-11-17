@@ -32,13 +32,13 @@ export function PermissionMatrixPage() {
   // Load all permissions
   const { data: allPerms, isLoading: permsLoading } = useQuery({
     queryKey: ['permissions-all'],
-    queryFn:  () => permissionsApi.list().then((r) => r.data),
+    queryFn:  () => permissionsApi.list().then((r) => r.data.data),
   })
 
   // Load role with its current permissions
   const { data: role, isLoading: roleLoading } = useQuery({
     queryKey: ['role', id],
-    queryFn:  () => rolesApi.get(id!).then((r) => r.data),
+    queryFn:  () => rolesApi.get(id!).then((r) => r.data.data),
     enabled:  !!id,
   })
 

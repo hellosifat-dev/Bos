@@ -21,6 +21,7 @@ class Role extends Model
         'description',
         'is_system',
         'is_default',
+        'scope',
         'level',
         'sort_order',
         'status',
