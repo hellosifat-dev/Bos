@@ -29,7 +29,7 @@ class Branch extends Model
         'latitude',
         'longitude',
         'timezone',
-        'opening_hours',
+        'working_hours',
         'status',
         'manager_id',
         'settings',
@@ -41,7 +41,8 @@ class Branch extends Model
             'is_headquarters' => 'boolean',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
-            'opening_hours' => 'array',
+            'working_hours' => 'array',
+            'address' => 'array',
             'settings' => 'array',
         ];
     }

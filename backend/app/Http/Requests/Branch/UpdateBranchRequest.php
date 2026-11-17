@@ -12,6 +12,11 @@ class UpdateBranchRequest extends FormRequest
     {
         return [
             'name'          => 'sometimes|string|max:255',
+            'code'          => 'sometimes|string|max:50',
+            'is_headquarters' => 'boolean',
+            'city'          => 'nullable|string|max:120',
+            'state'         => 'nullable|string|max:120',
+            'country'       => 'nullable|string|max:120',
             'manager_id'    => 'nullable|exists:users,id',
             'phone'         => 'nullable|string',
             'email'         => 'nullable|email',

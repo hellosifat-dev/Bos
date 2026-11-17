@@ -11,6 +11,7 @@ import { branchApi } from '@/api/business'
 import { useAuthStore } from '@/stores/authStore'
 import type { Branch } from '@/types'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 export function BranchListPage() {
   const navigate = useNavigate()
@@ -31,7 +32,7 @@ export function BranchListPage() {
       setDeleteTarget(null)
       toast.success('Branch deleted.')
     },
-    onError: (err: Error) => toast.error(err.message || 'Cannot delete branch.'),
+    onError: (err: unknown) => toast.error(getErrorMessage(err, 'Cannot delete branch.')),
   })
 
   const branches: Branch[] = data ?? []

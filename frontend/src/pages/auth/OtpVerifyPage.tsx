@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Alert  } from '@/components/ui/Alert'
 import { authApi } from '@/api/auth'
+import { getErrorMessage } from '@/utils/format'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
@@ -24,9 +25,9 @@ export function OtpVerifyPage() {
 
   const verify = useMutation({
     mutationFn: (code: string) =>
-      authApi.verifyOtp({ type: type ?? 'login', code }),
+      authApi.verifyOtp({ type: type ?? 'email_verification', email, code }),
     onSuccess: (res) => {
-      const d = res.data as { user?: Parameters<typeof setAuth>[0]; token?: string }
+      const d = res.data.data
       if (d?.token && d?.user) {
         setAuth(d.user, d.token)
         navigate('/app/dashboard', { replace: true })
@@ -34,13 +35,13 @@ export function OtpVerifyPage() {
         navigate('/login', { replace: true })
       }
     },
-    onError: (err: Error) => setError(err.message || 'Invalid OTP. Please try again.'),
+    onError: (err: unknown) => setError(getErrorMessage(err, 'Invalid OTP. Please try again.')),
   })
 
   const resend = useMutation({
-    mutationFn: () => authApi.sendOtp({ type: type ?? 'login', email }),
+    mutationFn: () => authApi.sendOtp({ type: type ?? 'email_verification', email }),
     onSuccess: () => { toast.success('A new code was sent.'); setDigits(Array(OTP_LENGTH).fill('')) },
-    onError:   (err: Error) => toast.error(err.message || 'Could not resend OTP.'),
+    onError:   (err: unknown) => toast.error(getErrorMessage(err, 'Could not resend OTP.')),
   })
 
   const handleChange = (index: number, value: string) => {

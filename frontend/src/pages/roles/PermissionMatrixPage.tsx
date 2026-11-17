@@ -9,6 +9,7 @@ import { rolesApi, permissionsApi } from '@/api/users'
 import type { Permission } from '@/types'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 // ─── Group permissions by module ─────────────────────────────────────────────
 function groupByModule(permissions: Permission[]): Record<string, Permission[]> {
@@ -56,7 +57,7 @@ export function PermissionMatrixPage() {
       qc.invalidateQueries({ queryKey: ['role', id] })
       toast.success('Permissions saved.')
     },
-    onError: (err: Error) => toast.error(err.message || 'Failed to save permissions.'),
+    onError: (err: unknown) => toast.error(getErrorMessage(err, 'Failed to save permissions.')),
   })
 
   const isLoading = permsLoading || roleLoading

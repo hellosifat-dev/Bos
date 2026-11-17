@@ -1,18 +1,17 @@
 import { useRef, useState, useEffect, type KeyboardEvent, type ClipboardEvent } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Alert  } from '@/components/ui/Alert'
 import { authApi } from '@/api/auth'
+import { getErrorMessage } from '@/utils/format'
 import { useAuthStore } from '@/stores/authStore'
 
 const CODE_LENGTH = 6
 
 export function TwoFactorPage() {
   const navigate  = useNavigate()
-  const location  = useLocation()
-  const { userId } = (location.state as { userId?: string }) ?? {}
 
   const setAuth = useAuthStore((s) => s.setAuth)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
@@ -24,11 +23,15 @@ export function TwoFactorPage() {
   const verify = useMutation({
     mutationFn: (code: string) => authApi.verify2FA({ code }),
     onSuccess: (res) => {
-      const d = res.data as { user?: Parameters<typeof setAuth>[0]; token?: string }
-      if (d?.user && d?.token) setAuth(d.user, d.token)
-      navigate('/app/dashboard', { replace: true })
+      const d = res.data.data
+      if (d?.user && d?.token) {
+        setAuth(d.user, d.token)
+        navigate('/app/dashboard', { replace: true })
+      } else {
+        setError('Could not complete sign-in. Please log in again.')
+      }
     },
-    onError: (err: Error) => setError(err.message || 'Invalid code. Please try again.'),
+    onError: (err: unknown) => setError(getErrorMessage(err, 'Invalid code. Please try again.')),
   })
 
   const handleChange = (index: number, value: string) => {

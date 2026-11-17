@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -75,7 +76,7 @@ export default function UserEditPage() {
       navigate('/app/users')
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to update user'
+      const msg = getErrorMessage(err, 'Failed to update user')
       toast.error(msg)
     },
   })
@@ -133,15 +134,10 @@ export default function UserEditPage() {
                 <Select
                   label="Role"
                   error={errors.role_id?.message}
+                  placeholder="Select a role"
+                  options={roles.map((role) => ({ value: role.id, label: role.name }))}
                   {...field}
-                >
-                  <option value="">Select a role</option>
-                  {roles.map(role => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </Select>
+                />
               )}
             />
 
@@ -149,11 +145,15 @@ export default function UserEditPage() {
               name="status"
               control={control}
               render={({ field }) => (
-                <Select label="Status" {...field}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
-                </Select>
+                <Select
+                  label="Status"
+                  options={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'suspended', label: 'Suspended' },
+                  ]}
+                  {...field}
+                />
               )}
             />
           </CardBody>

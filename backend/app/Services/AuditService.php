@@ -9,6 +9,43 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditService
 {
+    /**
+     * Record a CRUD-style action against a module record.
+     * e.g. record('create', 'branches', $branch->id, null, $data)
+     */
+    public function record(
+        string $action,
+        string $module,
+        int|string|null $recordId = null,
+        ?array $old = null,
+        ?array $new = null,
+    ): AuditLog {
+        $user = auth()->user();
+
+        return AuditLog::create([
+            'user_id'        => $user?->id,
+            'tenant_id'      => $this->tenantId($user),
+            'business_id'    => $this->businessId(),
+            'branch_id'      => request()->header('X-Branch-ID') ?: null,
+            'event'          => "{$module}.{$action}",
+            'auditable_type' => $module,
+            'auditable_id'   => $recordId,
+            'module'         => $module,
+            'action'         => $action,
+            'description'    => ucfirst(str_replace('_', ' ', $action)) . " {$module}" . ($recordId ? " #{$recordId}" : ''),
+            'old_values'     => $this->scrub($old),
+            'new_values'     => $this->scrub($new),
+            'ip_address'     => request()->ip(),
+            'user_agent'     => request()->userAgent(),
+            'url'            => request()->fullUrl(),
+            'method'         => request()->method(),
+            'severity'       => 'info',
+        ]);
+    }
+
+    /**
+     * Record a free-form event ("module.action").
+     */
     public function log(
         string $event,
         string $description = '',
@@ -18,107 +55,55 @@ class AuditService
         array $oldValues = [],
         array $newValues = [],
         array $metadata = [],
-        string $severity = 'info'
+        string $severity = 'info',
     ): AuditLog {
-        $currentUser = $user ?? auth()->user();
-        $currentBusiness = $business ?? $this->resolveCurrentBusiness();
-
-        [$module, $action] = $this->parseEvent($event);
+        $actor = $user ?? auth()->user();
+        [$module, $action] = array_pad(explode('.', $event, 2), 2, 'action');
 
         return AuditLog::create([
-            'user_id' => $currentUser?->id,
-            'tenant_id' => $currentUser ? $this->resolveTenantId($currentUser) : null,
-            'business_id' => $currentBusiness?->id,
-            'event' => $event,
-            'auditable_type' => $auditable ? get_class($auditable) : null,
-            'auditable_id' => $auditable?->id,
-            'module' => $module,
-            'action' => $action,
-            'description' => $description,
-            'old_values' => !empty($oldValues) ? $oldValues : null,
-            'new_values' => !empty($newValues) ? $newValues : null,
-            'metadata' => !empty($metadata) ? $metadata : null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'url' => request()->fullUrl(),
-            'method' => request()->method(),
-            'severity' => $severity,
+            'user_id'        => $actor?->id,
+            'tenant_id'      => $this->tenantId($actor) ?? $business?->tenant_id,
+            'business_id'    => $business?->id ?? $this->businessId(),
+            'event'          => $event,
+            'auditable_type' => $auditable ? $auditable::class : null,
+            'auditable_id'   => $auditable?->getKey(),
+            'module'         => $module,
+            'action'         => $action,
+            'description'    => $description,
+            'old_values'     => $this->scrub($oldValues ?: null),
+            'new_values'     => $this->scrub($newValues ?: null),
+            'metadata'       => $metadata ?: null,
+            'ip_address'     => request()->ip(),
+            'user_agent'     => request()->userAgent(),
+            'url'            => request()->fullUrl(),
+            'method'         => request()->method(),
+            'severity'       => $severity,
         ]);
     }
 
-    public function logModelChange(
-        Model $model,
-        string $action,
-        array $oldValues = [],
-        array $newValues = [],
-        ?User $user = null
-    ): AuditLog {
-        $modelName = class_basename($model);
-        $event = strtolower("{$modelName}.{$action}");
-
-        return $this->log(
-            event: $event,
-            description: "{$modelName} {$action}: ID {$model->id}",
-            user: $user,
-            auditable: $model,
-            oldValues: $oldValues,
-            newValues: $newValues
-        );
+    private function scrub(?array $values): ?array
+    {
+        if (!$values) {
+            return null;
+        }
+        foreach (['password', 'password_confirmation', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'] as $key) {
+            unset($values[$key]);
+        }
+        return $values ?: null;
     }
 
-    public function getForBusiness(int $businessId, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    private function tenantId(?User $user): ?int
     {
-        $query = AuditLog::where('business_id', $businessId)
-            ->with('user')
-            ->orderByDesc('created_at');
-
-        if (!empty($filters['module'])) {
-            $query->where('module', $filters['module']);
+        $header = request()->header('X-Tenant-ID');
+        if ($header && $user && $user->tenants()->where('tenants.id', $header)->exists()) {
+            return (int) $header;
         }
-
-        if (!empty($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
-        }
-
-        if (!empty($filters['severity'])) {
-            $query->where('severity', $filters['severity']);
-        }
-
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
-        }
-
-        return $query->paginate($filters['per_page'] ?? 25);
+        return $user?->tenants()->value('tenants.id');
     }
 
-    private function parseEvent(string $event): array
+    private function businessId(): ?int
     {
-        $parts = explode('.', $event);
-        return [
-            $parts[0] ?? 'system',
-            $parts[1] ?? 'action',
-        ];
-    }
-
-    private function resolveCurrentBusiness(): ?Business
-    {
-        $businessId = request()->header('X-Business-ID');
-        if ($businessId) {
-            return Business::find($businessId);
-        }
-        return null;
-    }
-
-    private function resolveTenantId(User $user): ?int
-    {
-        $tenantId = request()->header('X-Tenant-ID');
-        if ($tenantId) {
-            return (int) $tenantId;
-        }
-        return $user->tenants()->first()?->id;
+        $header = request()->header('X-Business-ID');
+        return $header && Business::whereKey($header)->exists() ? (int) $header : null;
     }
 }

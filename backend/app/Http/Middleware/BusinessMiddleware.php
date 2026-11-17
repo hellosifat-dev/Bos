@@ -11,46 +11,42 @@ class BusinessMiddleware
     public function handle(Request $request, Closure $next)
     {
         $businessId = $request->header('X-Business-ID');
-        $tenantId   = $request->header('X-Tenant-ID');
 
         if (!$businessId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Business identifier is required.',
-            ], 400);
+            return response()->json(['success' => false, 'message' => 'Business identifier is required.'], 400);
         }
 
+        $tenant   = $request->attributes->get('tenant');
         $business = Business::where('id', $businessId)
-            ->where('tenant_id', $tenantId)
-            ->where('status', '!=', 'deleted')
+            ->when($tenant, fn ($q) => $q->where('tenant_id', $tenant->id))
             ->first();
 
         if (!$business) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Business not found.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Business not found.'], 404);
         }
 
-        // Verify user has access to this business
         $user = $request->user();
-        if ($user) {
-            $hasAccess = $user->roles()
-                ->where('business_id', $businessId)
-                ->exists();
-
-            // Business owner always has access
-            if (!$hasAccess && $business->owner_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Access denied to this business.',
-                ], 403);
-            }
+        if ($user && !$this->canAccess($user, $business, $tenant)) {
+            return response()->json(['success' => false, 'message' => 'Access denied to this business.'], 403);
         }
 
         app()->instance('current_business', $business);
         $request->attributes->set('business', $business);
 
         return $next($request);
+    }
+
+    private function canAccess($user, Business $business, $tenant): bool
+    {
+        if ($user->is_super_admin || $business->owner_id === $user->id) {
+            return true;
+        }
+
+        $isTenantOwner = $user->tenants()
+            ->where('tenants.id', $business->tenant_id)
+            ->wherePivotIn('role', ['owner', 'admin'])
+            ->exists();
+
+        return $isTenantOwner || $user->userRoles()->where('business_id', $business->id)->exists();
     }
 }

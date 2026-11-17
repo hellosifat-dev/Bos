@@ -26,6 +26,9 @@ class Business extends Model
         'phone',
         'website',
         'logo',
+        'favicon',
+        'language',
+        'setup_completed_at',
         'description',
         'address',
         'city',
@@ -48,6 +51,8 @@ class Business extends Model
     {
         return [
             'setup_steps' => 'array',
+            'address' => 'array',
+            'setup_completed_at' => 'datetime',
             'settings' => 'array',
             'modules_enabled' => 'array',
             'setup_progress' => 'integer',

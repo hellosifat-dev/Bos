@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input  } from '@/components/ui/Input'
 import { Alert  } from '@/components/ui/Alert'
 import { useAuth } from '@/hooks/useAuth'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   email:    z.string().email('Enter a valid email'),
@@ -40,7 +41,7 @@ export function LoginPage() {
 
       {loginMutation.error && (
         <Alert variant="error" className="mb-5">
-          {(loginMutation.error as Error).message || 'Invalid credentials. Please try again.'}
+          {getErrorMessage(loginMutation.error, 'Invalid credentials. Please try again.')}
         </Alert>
       )}
 

@@ -24,6 +24,8 @@ const UserListPage          = lazy(() => import('@/pages/users/UserListPage').th
 const UserCreatePage        = lazy(() => import('@/pages/users/UserCreatePage').then((m) => ({ default: m.UserCreatePage })))
 const UserEditPage          = lazy(() => import('@/pages/users/UserEditPage'))
 const RoleListPage          = lazy(() => import('@/pages/roles/RoleListPage').then((m) => ({ default: m.RoleListPage })))
+const RoleCreatePage        = lazy(() => import('@/pages/roles/RoleCreatePage'))
+const SecurityPage          = lazy(() => import('@/pages/settings/SecurityPage').then((m) => ({ default: m.SecurityPage })))
 const RoleEditPage          = lazy(() => import('@/pages/roles/RoleEditPage'))
 const PermissionMatrixPage  = lazy(() => import('@/pages/roles/PermissionMatrixPage').then((m) => ({ default: m.PermissionMatrixPage })))
 const AuditLogPage          = lazy(() => import('@/pages/audit/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
@@ -134,6 +136,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'roles/new',
+        element: (
+          <PrivateRoute permission="roles.create">
+            <Wrap><RoleCreatePage /></Wrap>
+          </PrivateRoute>
+        ),
+      },
+      {
         path: 'roles/:id/edit',
         element: (
           <PrivateRoute permission="roles.edit">
@@ -149,6 +159,9 @@ export const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+
+      // Account security
+      { path: 'settings/security', element: <Wrap><SecurityPage /></Wrap> },
 
       // Audit logs
       {

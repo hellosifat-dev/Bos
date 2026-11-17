@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, ShoppingBag, Package, Warehouse, Truck, Users, ClipboardList,
-  UserCheck, DollarSign, BarChart2, Globe, Megaphone, Settings, ChevronDown,
-  ChevronRight, Building2, Shield, FileText, CreditCard, Tags, Layers, X, Menu,
+  LayoutDashboard, Users, Settings, ChevronDown, ChevronRight, Building2, Shield, FileText, X, Menu,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useAuthStore } from '@/stores/authStore'
 
 interface NavItem {
   label: string
@@ -15,67 +14,15 @@ interface NavItem {
   module?: string
 }
 
+// Phase 1 navigation. Items appear only when the user holds `<module>.view`.
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard' },
-  {
-    label: 'Sales', icon: ShoppingBag, children: [
-      { label: 'Orders', icon: ClipboardList, href: '/app/orders', module: 'orders' },
-      { label: 'Invoices', icon: FileText, href: '/app/invoices', module: 'sales' },
-      { label: 'Quotations', icon: FileText, href: '/app/quotations', module: 'sales' },
-      { label: 'POS', icon: CreditCard, href: '/app/pos', module: 'pos' },
-      { label: 'Returns', icon: Package, href: '/app/returns', module: 'returns' },
-    ],
-  },
-  {
-    label: 'Products', icon: Tags, children: [
-      { label: 'Product List', icon: Package, href: '/app/products', module: 'products' },
-      { label: 'Categories', icon: Layers, href: '/app/categories', module: 'categories' },
-      { label: 'Brands', icon: ShoppingBag, href: '/app/brands', module: 'brands' },
-    ],
-  },
-  {
-    label: 'Inventory', icon: Warehouse, children: [
-      { label: 'Stock', icon: Package, href: '/app/inventory', module: 'inventory' },
-      { label: 'Warehouses', icon: Warehouse, href: '/app/warehouses', module: 'warehouses' },
-      { label: 'Transfers', icon: Truck, href: '/app/stock-transfers', module: 'inventory' },
-    ],
-  },
-  {
-    label: 'Purchasing', icon: ClipboardList, children: [
-      { label: 'Suppliers', icon: Users, href: '/app/suppliers', module: 'suppliers' },
-      { label: 'Purchase Orders', icon: ClipboardList, href: '/app/purchase-orders', module: 'purchasing' },
-    ],
-  },
-  { label: 'Customers', icon: UserCheck, href: '/app/customers', module: 'customers' },
-  { label: 'Delivery', icon: Truck, href: '/app/delivery', module: 'delivery' },
-  {
-    label: 'HR', icon: Users, children: [
-      { label: 'Employees', icon: Users, href: '/app/employees', module: 'employees' },
-      { label: 'Attendance', icon: UserCheck, href: '/app/attendance', module: 'attendance' },
-      { label: 'Leave', icon: ClipboardList, href: '/app/leave', module: 'leave' },
-      { label: 'Payroll', icon: DollarSign, href: '/app/payroll', module: 'payroll' },
-    ],
-  },
-  {
-    label: 'Finance', icon: DollarSign, children: [
-      { label: 'Expenses', icon: CreditCard, href: '/app/expenses', module: 'expenses' },
-      { label: 'Accounting', icon: FileText, href: '/app/accounting', module: 'accounting' },
-      { label: 'Reports', icon: BarChart2, href: '/app/reports', module: 'reports' },
-    ],
-  },
-  { label: 'Marketing', icon: Megaphone, href: '/app/marketing', module: 'marketing' },
-  { label: 'Website', icon: Globe, href: '/app/website', module: 'website' },
-  { label: 'Analytics', icon: BarChart2, href: '/app/analytics', module: 'analytics' },
-  {
-    label: 'Settings', icon: Settings, children: [
-      { label: 'Business', icon: Building2, href: '/app/settings/business' },
-      { label: 'Branches', icon: Building2, href: '/app/branches', module: 'branches' },
-      { label: 'Users', icon: Users, href: '/app/users', module: 'users' },
-      { label: 'Roles', icon: Shield, href: '/app/roles', module: 'roles' },
-      { label: 'Integrations', icon: Layers, href: '/app/integrations', module: 'integrations' },
-      { label: 'Audit Log', icon: FileText, href: '/app/audit-logs', module: 'audit_logs' },
-    ],
-  },
+  { label: 'Businesses', icon: Building2, href: '/app/businesses' },
+  { label: 'Branches', icon: Building2, href: '/app/branches', module: 'branches' },
+  { label: 'Users', icon: Users, href: '/app/users', module: 'users' },
+  { label: 'Roles', icon: Shield, href: '/app/roles', module: 'roles' },
+  { label: 'Audit Log', icon: FileText, href: '/app/audit-logs', module: 'audit_logs' },
+  { label: 'Security', icon: Settings, href: '/app/settings/security' },
 ]
 
 interface SidebarProps {
@@ -145,6 +92,7 @@ function NavItemComponent({ item, collapsed }: { item: NavItem; collapsed: boole
 }
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
+  const permissions = useAuthStore((s) => s.permissions)
   return (
     <>
       {/* Mobile backdrop */}
@@ -196,7 +144,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-          {navItems.map((item) => (
+          {navItems.filter((item) => !item.module || permissions.includes('*') || permissions.includes(`${item.module}.view`)).map((item) => (
             <NavItemComponent key={item.label} item={item} collapsed={collapsed} />
           ))}
         </nav>

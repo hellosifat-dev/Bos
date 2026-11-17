@@ -11,6 +11,7 @@ import { Alert }   from '@/components/ui/Alert'
 import { Card }    from '@/components/ui/Card'
 import { usersApi, rolesApi } from '@/api/users'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name:     z.string().min(2, 'Name is required'),
@@ -67,7 +68,7 @@ export function UserCreatePage() {
 
       {mutation.error && (
         <Alert variant="error" className="mb-5">
-          {(mutation.error as Error).message || 'Failed to create user.'}
+          {getErrorMessage(mutation.error, 'Failed to create user.')}
         </Alert>
       )}
 

@@ -7,6 +7,7 @@ import { Badge }   from '@/components/ui/Badge'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal }   from '@/components/ui/Modal'
 import { Alert }   from '@/components/ui/Alert'
+import { getErrorMessage } from '@/utils/format'
 import { businessApi } from '@/api/business'
 import { useAuthStore } from '@/stores/authStore'
 import type { Business } from '@/types'
@@ -33,13 +34,13 @@ export function BusinessListPage() {
   const switchMutation = useMutation({
     mutationFn: (id: string) => businessApi.switch(id),
     onSuccess: (res) => {
-      setBusiness(res.data.data.business)
+      setBusiness(res.data.data.business, res.data.data.permissions)
       qc.clear()
       setSwitchTarget(null)
       toast.success(`Switched to ${res.data.data.business.name}`)
       navigate('/app/dashboard')
     },
-    onError: () => toast.error('Failed to switch business.'),
+    onError: (err: unknown) => toast.error(getErrorMessage(err, 'Failed to switch business.')),
   })
 
   const businesses: Business[] = data ?? []

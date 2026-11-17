@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -25,6 +26,12 @@ class PermissionService
             return $permissions;
         }
 
+        if ($this->isBusinessOwner($user, $businessId)) {
+            $permissions = Permission::pluck('slug');
+            $this->permissionCache[$cacheKey] = $permissions;
+            return $permissions;
+        }
+
         $permissions = $user->userRoles()
             ->where('business_id', $businessId)
             ->where(function ($q) {
@@ -38,6 +45,17 @@ class PermissionService
 
         $this->permissionCache[$cacheKey] = $permissions;
         return $permissions;
+    }
+
+    private function isBusinessOwner(User $user, int $businessId): bool
+    {
+        $business = Business::find($businessId);
+        if (!$business) {
+            return false;
+        }
+
+        return $business->owner_id === $user->id
+            || $user->tenants()->where('tenants.id', $business->tenant_id)->wherePivot('role', 'owner')->exists();
     }
 
     public function userCan(User $user, string $permission, int $businessId): bool

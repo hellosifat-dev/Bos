@@ -6,11 +6,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
 import { Button }  from '@/components/ui/Button'
 import { Input }   from '@/components/ui/Input'
-import { Select }  from '@/components/ui/Select'
 import { Alert }   from '@/components/ui/Alert'
 import { Card }    from '@/components/ui/Card'
 import { branchApi } from '@/api/business'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name:             z.string().min(2, 'Branch name is required'),
@@ -66,7 +66,7 @@ export function BranchCreatePage() {
 
       {mutation.error && (
         <Alert variant="error" className="mb-5">
-          {(mutation.error as Error).message || 'Failed to create branch.'}
+          {getErrorMessage(mutation.error, 'Failed to create branch.')}
         </Alert>
       )}
 
