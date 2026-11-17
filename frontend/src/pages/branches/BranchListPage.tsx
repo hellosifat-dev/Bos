@@ -20,7 +20,7 @@ export function BranchListPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['branches', currentBusiness?.id],
-    queryFn:  () => branchApi.list().then((r) => r.data),
+    queryFn:  () => branchApi.list().then((r) => r.data.data),
     enabled:  !!currentBusiness?.id,
   })
 

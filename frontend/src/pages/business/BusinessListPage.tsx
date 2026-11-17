@@ -27,16 +27,16 @@ export function BusinessListPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['businesses'],
-    queryFn:  () => businessApi.list().then((r) => r.data),
+    queryFn:  () => businessApi.list().then((r) => r.data.data),
   })
 
   const switchMutation = useMutation({
     mutationFn: (id: string) => businessApi.switch(id),
     onSuccess: (res) => {
-      setBusiness(res.data.business)
+      setBusiness(res.data.data.business)
       qc.clear()
       setSwitchTarget(null)
-      toast.success(`Switched to ${res.data.business.name}`)
+      toast.success(`Switched to ${res.data.data.business.name}`)
       navigate('/app/dashboard')
     },
     onError: () => toast.error('Failed to switch business.'),

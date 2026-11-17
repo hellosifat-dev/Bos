@@ -19,7 +19,7 @@ export function RoleListPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['roles'],
-    queryFn:  () => rolesApi.list().then((r) => r.data),
+    queryFn:  () => rolesApi.list().then((r) => r.data.data),
   })
 
   const deleteMutation = useMutation({

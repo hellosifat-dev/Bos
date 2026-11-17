@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_system')->default(false);
             $table->boolean('is_default')->default(false);
+            $table->enum('scope', ['global', 'business', 'branch', 'department', 'own'])->default('business');
             $table->enum('level', ['super_admin', 'tenant_admin', 'business_admin', 'branch_manager', 'employee', 'custom'])->default('custom');
             $table->integer('sort_order')->default(0);
             $table->enum('status', ['active', 'inactive'])->default('active');

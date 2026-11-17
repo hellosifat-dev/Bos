@@ -37,7 +37,7 @@ export default function BranchEditPage() {
 
   const { data: response, isLoading, isError } = useQuery({
     queryKey: ['branch', id],
-    queryFn: () => branchApi.get(id!),
+    queryFn: () => branchApi.get(id!).then((r) => r.data),
     enabled: !!id,
   })
 

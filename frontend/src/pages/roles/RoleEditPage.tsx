@@ -29,7 +29,7 @@ export default function RoleEditPage() {
 
   const { data: response, isLoading, isError } = useQuery({
     queryKey: ['role', id],
-    queryFn: () => rolesApi.get(id!),
+    queryFn: () => rolesApi.get(id!).then((r) => r.data),
     enabled: !!id,
   })
 
