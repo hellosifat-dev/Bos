@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Business;
 use App\Models\Branch;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -12,7 +13,8 @@ use Illuminate\Validation\ValidationException;
 class BusinessService
 {
     public function __construct(
-        private AuditService $auditService
+        private AuditService $auditService,
+        private PermissionService $permissions,
     ) {}
 
     public function create(array $data, Tenant $tenant, User $owner): Business
@@ -22,6 +24,8 @@ class BusinessService
         $slug = $this->generateSlug($data['name'], $tenant->id);
 
         $setupSteps = $this->getDefaultSetupSteps();
+
+        $address = $data['address'] ?? null;
 
         $business = Business::create([
             'tenant_id' => $tenant->id,
@@ -34,11 +38,12 @@ class BusinessService
             'phone' => $data['phone'] ?? null,
             'website' => $data['website'] ?? null,
             'description' => $data['description'] ?? null,
-            'address' => $data['address'] ?? null,
-            'city' => $data['city'] ?? null,
-            'state' => $data['state'] ?? null,
+            'address' => $address,
+            'city' => $address['city'] ?? ($data['city'] ?? null),
+            'state' => $address['state'] ?? ($data['state'] ?? null),
             'country' => $data['country'] ?? 'US',
-            'postal_code' => $data['postal_code'] ?? null,
+            'postal_code' => $address['postal_code'] ?? ($data['postal_code'] ?? null),
+            'language' => $data['language'] ?? 'en',
             'timezone' => $data['timezone'] ?? $tenant->timezone,
             'currency' => $data['currency'] ?? $tenant->currency,
             'status' => 'setup',
@@ -50,6 +55,12 @@ class BusinessService
 
         // Create headquarters branch
         $this->createHeadquartersBranch($business, $data);
+
+        // The creator becomes the business owner.
+        $ownerRole = Role::where('slug', 'business_owner')->where('is_system', true)->first();
+        if ($ownerRole) {
+            $this->permissions->assignRoleToUser($owner, $ownerRole, $business->id, null, $owner->id);
+        }
 
         $this->auditService->log(
             event: 'business.created',
@@ -111,7 +122,7 @@ class BusinessService
         $business->updateSetupProgress();
 
         if ($business->setup_progress >= 100) {
-            $business->update(['status' => 'active']);
+            $business->update(['status' => 'active', 'setup_completed_at' => now()]);
         }
     }
 
@@ -150,9 +161,10 @@ class BusinessService
             'business_id' => $business->id,
             'tenant_id' => $business->tenant_id,
             'name' => 'Headquarters',
+            'code' => 'HQ',
             'is_headquarters' => true,
-            'address' => $data['address'] ?? 'N/A',
-            'city' => $data['city'] ?? 'N/A',
+            'address' => $data['address'] ?? null,
+            'city' => $data['address']['city'] ?? null,
             'country' => $data['country'] ?? 'US',
             'status' => 'active',
         ]);

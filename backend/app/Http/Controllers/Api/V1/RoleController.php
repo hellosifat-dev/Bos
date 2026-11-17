@@ -11,6 +11,8 @@ use App\Models\Role;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class RoleController extends Controller
 {
@@ -27,10 +29,10 @@ class RoleController extends Controller
             })
             ->withCount('users')
             ->with('permissions')
-            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->search, fn($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($request->search) . '%']))
             ->orderBy('is_system', 'desc')
             ->orderBy('name')
-            ->paginate($request->per_page ?? 20);
+            ->paginate($request->per_page ?? 100);
 
         return response()->json([
             'success' => true,
@@ -41,18 +43,21 @@ class RoleController extends Controller
 
     public function store(StoreRoleRequest $request): JsonResponse
     {
-        $data              = $request->validated();
-        $data['tenant_id'] = $request->header('X-Tenant-ID');
-        $data['business_id'] = $request->header('X-Business-ID');
-        $data['is_system'] = false;
+        $data                = $request->validated();
+        $permissionIds       = Arr::pull($data, 'permission_ids', []);
+        $business            = $request->attributes->get('business');
+        $data['tenant_id']   = $business->tenant_id;
+        $business_id         = $business->id;
+        $data['business_id'] = $business_id;
+        $data['is_system']   = false;
+        $data['level']       = 'custom';
+        $data['scope']       = $data['scope'] ?? 'business';
+        $data['slug']        = $this->uniqueSlug($data['slug'] ?? $data['name'], $business_id);
 
         $role = Role::create($data);
+        $role->permissions()->sync($permissionIds);
 
-        if (!empty($data['permission_ids'])) {
-            $role->permissions()->sync($data['permission_ids']);
-        }
-
-        $this->auditService->log('create', 'roles', $role->id, null, $data);
+        $this->auditService->record('create', 'roles', $role->id, null, $data + ['permission_ids' => $permissionIds]);
 
         return response()->json([
             'success' => true,
@@ -78,18 +83,16 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, string $id): JsonResponse
     {
-        $role = Role::where('tenant_id', $request->header('X-Tenant-ID'))
-            ->where('is_system', false)
-            ->findOrFail($id);
+        $role = $this->customRole($request, $id);
 
         $old = $role->toArray();
-        $role->update($request->safe()->except('permission_ids'));
+        $role->update($request->safe()->except('permission_ids', 'slug'));
 
         if ($request->has('permission_ids')) {
             $role->permissions()->sync($request->permission_ids);
         }
 
-        $this->auditService->log('update', 'roles', $role->id, $old, $request->validated());
+        $this->auditService->record('update', 'roles', $role->id, $old, $request->validated());
 
         return response()->json([
             'success' => true,
@@ -100,15 +103,13 @@ class RoleController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $role = Role::where('tenant_id', $request->header('X-Tenant-ID'))
-            ->where('is_system', false)
-            ->findOrFail($id);
+        $role = $this->customRole($request, $id);
 
         if ($role->users()->count() > 0) {
             return response()->json(['success' => false, 'message' => 'Cannot delete role with assigned users.'], 422);
         }
 
-        $this->auditService->log('delete', 'roles', $role->id, $role->toArray(), null);
+        $this->auditService->record('delete', 'roles', $role->id, $role->toArray(), null);
         $role->delete();
 
         return response()->json(['success' => true, 'message' => 'Role deleted successfully.']);
@@ -118,17 +119,35 @@ class RoleController extends Controller
     {
         $request->validate(['permission_ids' => 'required|array', 'permission_ids.*' => 'exists:permissions,id']);
 
-        $role = Role::where('tenant_id', $request->header('X-Tenant-ID'))
-            ->where('is_system', false)
-            ->findOrFail($id);
+        $role = $this->customRole($request, $id);
 
         $role->permissions()->sync($request->permission_ids);
-        $this->auditService->log('sync_permissions', 'roles', $role->id, null, ['permission_ids' => $request->permission_ids]);
+        $this->auditService->record('sync_permissions', 'roles', $role->id, null, ['permission_ids' => $request->permission_ids]);
 
         return response()->json([
             'success' => true,
             'data'    => new RoleResource($role->load('permissions')),
             'message' => 'Permissions synced successfully.',
         ]);
+    }
+
+    private function customRole(Request $request, string $id): Role
+    {
+        return Role::where('tenant_id', $request->attributes->get('business')->tenant_id)
+            ->where('business_id', $request->attributes->get('business')->id)
+            ->where('is_system', false)
+            ->findOrFail($id);
+    }
+
+    private function uniqueSlug(string $source, int $businessId): string
+    {
+        $base = Str::slug($source, '_') ?: 'role';
+        $slug = $base;
+        $i = 2;
+        while (Role::where('business_id', $businessId)->where('slug', $slug)->exists()) {
+            $slug = "{$base}_{$i}";
+            $i++;
+        }
+        return $slug;
     }
 }

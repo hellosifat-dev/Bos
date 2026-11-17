@@ -3,11 +3,11 @@ import type { ApiResponse, PaginatedResponse, Business, Branch, PaginationParams
 
 export const businessApi = {
   list:          (params?: PaginationParams)           => apiClient.get<PaginatedResponse<Business>>('/businesses', { params }),
-  create:        (data: Partial<Business>)             => apiClient.post<ApiResponse<Business>>('/businesses', data),
+  create:        (data: Partial<Business>)             => apiClient.post<ApiResponse<Business> & { permissions: string[] }>('/businesses', data),
   get:           (id: string)                          => apiClient.get<ApiResponse<Business>>(`/businesses/${id}`),
   update:        (id: string, data: Partial<Business>) => apiClient.put<ApiResponse<Business>>(`/businesses/${id}`, data),
   setupProgress: (id: string)                          => apiClient.get<ApiResponse<{ progress: number; steps: Record<string, boolean> }>>(`/businesses/${id}/setup-progress`),
-  switch:        (id: string)                          => apiClient.post<ApiResponse<{ business: Business; token: string }>>(`/businesses/${id}/switch`),
+  switch:        (id: string)                          => apiClient.post<ApiResponse<{ business: Business; permissions: string[] }>>(`/businesses/${id}/switch`),
   updateStep:    (id: string, step: string, data: unknown) =>
                                                           apiClient.post<ApiResponse>(`/businesses/${id}/setup/${step}`, data),
 }

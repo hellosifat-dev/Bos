@@ -32,3 +32,11 @@ export function initials(name: string) {
     .slice(0, 2)
     .toUpperCase()
 }
+
+/** Best-effort extraction of a human-readable message from an API/axios error. */
+export function getErrorMessage(err: unknown, fallback = 'Something went wrong.'): string {
+  const e = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string }
+  const data = e?.response?.data
+  const first = data?.errors ? Object.values(data.errors)[0]?.[0] : undefined
+  return first || data?.message || e?.message || fallback
+}

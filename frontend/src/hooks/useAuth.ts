@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authApi, type LoginPayload, type RegisterPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/format'
 
 export function useAuth() {
   const navigate  = useNavigate()
@@ -15,15 +16,24 @@ export function useAuth() {
       if (!res.success) { toast.error(res.message || 'Login failed'); return }
       const { user, token, requires_2fa, requires_otp } = res.data
 
-      if (requires_2fa)  { navigate('/two-factor', { state: { token } }); return }
-      if (requires_otp)  { navigate('/verify-otp', { state: { token } }); return }
+      if (requires_otp) {
+        navigate('/verify-otp', { state: { email: user.email, type: 'email_verification' } })
+        return
+      }
+      if (requires_2fa && token) {
+        // Limited challenge token: only valid for POST /auth/2fa/verify.
+        localStorage.setItem('bos_token', token)
+        navigate('/two-factor')
+        return
+      }
+      if (!token) { toast.error('Login failed'); return }
 
       authStore.setAuth(user, token)
       toast.success(`Welcome back, ${user.name}!`)
       navigate('/app/dashboard')
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Login failed. Please check your credentials.')
+      toast.error(getErrorMessage(error, 'Login failed. Please check your credentials.'))
     },
   })
 
@@ -36,7 +46,7 @@ export function useAuth() {
       navigate('/verify-otp', { state: { email: res.data.user.email, type: 'email_verification' } })
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Registration failed.')
+      toast.error(getErrorMessage(error, 'Registration failed.'))
     },
   })
 

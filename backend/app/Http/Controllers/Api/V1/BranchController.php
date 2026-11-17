@@ -23,7 +23,7 @@ class BranchController extends Controller
         $branches = Branch::where('tenant_id', $tenantId)
             ->where('business_id', $businessId)
             ->with(['manager'])
-            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->search, fn($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($request->search) . '%']))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->orderBy('name')
             ->paginate($request->per_page ?? 15);
@@ -42,13 +42,26 @@ class BranchController extends Controller
 
     public function store(StoreBranchRequest $request): JsonResponse
     {
-        $data               = $request->validated();
-        $data['business_id'] = $request->header('X-Business-ID');
-        $data['tenant_id']  = $request->header('X-Tenant-ID');
+        $data                = $request->validated();
+        $business            = $request->attributes->get('business');
+        $data['business_id'] = $business->id;
+        $data['tenant_id']   = $business->tenant_id;
+
+        $max = $business->tenant->max_branches_per_business;
+        if ($max !== -1 && Branch::where('business_id', $business->id)->count() >= $max) {
+            return response()->json([
+                'success' => false,
+                'message' => "Your plan allows a maximum of {$max} branches per business.",
+            ], 422);
+        }
+
+        if (!empty($data['is_headquarters'])) {
+            Branch::where('business_id', $business->id)->update(['is_headquarters' => false]);
+        }
 
         $branch = Branch::create($data);
 
-        $this->auditService->log('create', 'branches', $branch->id, null, $data);
+        $this->auditService->record('create', 'branches', $branch->id, null, $data);
 
         return response()->json([
             'success' => true,
@@ -61,7 +74,7 @@ class BranchController extends Controller
     {
         $branch = Branch::where('tenant_id', $request->header('X-Tenant-ID'))
             ->where('business_id', $request->header('X-Business-ID'))
-            ->with(['manager', 'employees', 'warehouses'])
+            ->with(['manager'])
             ->findOrFail($id);
 
         return response()->json([
@@ -79,7 +92,7 @@ class BranchController extends Controller
         $old = $branch->toArray();
         $branch->update($request->validated());
 
-        $this->auditService->log('update', 'branches', $branch->id, $old, $request->validated());
+        $this->auditService->record('update', 'branches', $branch->id, $old, $request->validated());
 
         return response()->json([
             'success' => true,
@@ -101,7 +114,7 @@ class BranchController extends Controller
             ], 422);
         }
 
-        $this->auditService->log('delete', 'branches', $branch->id, $branch->toArray(), null);
+        $this->auditService->record('delete', 'branches', $branch->id, $branch->toArray(), null);
         $branch->delete();
 
         return response()->json([

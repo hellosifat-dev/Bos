@@ -10,9 +10,11 @@ import { Input }   from '@/components/ui/Input'
 import { Select }  from '@/components/ui/Select'
 import { Alert }   from '@/components/ui/Alert'
 import { businessApi } from '@/api/business'
+import type { BusinessType } from '@/types'
 import { useAuthStore } from '@/stores/authStore'
 import { clsx }    from 'clsx'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -93,7 +95,7 @@ export function BusinessCreatePage() {
     mutationFn: (data: FormData) => businessApi.create({
       name:          data.name,
       legal_name:    data.legal_name,
-      business_type: data.business_type,
+      business_type: data.business_type as BusinessType,
       email:         data.email || undefined,
       phone:         data.phone,
       country:       data.country,
@@ -107,7 +109,7 @@ export function BusinessCreatePage() {
       },
     }),
     onSuccess: (res) => {
-      setBusiness(res.data)
+      setBusiness(res.data.data, res.data.permissions)
       toast.success('Business created!')
       navigate('/app/dashboard')
     },
@@ -164,7 +166,7 @@ export function BusinessCreatePage() {
 
       {mutation.error && (
         <Alert variant="error" className="mb-5">
-          {(mutation.error as Error).message || 'Failed to create business. Please try again.'}
+          {getErrorMessage(mutation.error, 'Failed to create business. Please try again.')}
         </Alert>
       )}
 

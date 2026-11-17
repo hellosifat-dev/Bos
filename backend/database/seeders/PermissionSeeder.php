@@ -10,6 +10,10 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modules = [
+            'businesses' => ['view', 'create', 'edit', 'delete'],
+            'branches'   => ['view', 'create', 'edit', 'delete'],
+            'users'      => ['view', 'create', 'edit', 'delete'],
+            'roles'      => ['view', 'create', 'edit', 'delete'],
             'products'   => ['view', 'create', 'edit', 'delete', 'import', 'export', 'print'],
             'categories' => ['view', 'create', 'edit', 'delete'],
             'brands'     => ['view', 'create', 'edit', 'delete'],

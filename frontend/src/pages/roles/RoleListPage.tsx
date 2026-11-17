@@ -11,6 +11,7 @@ import { Card }    from '@/components/ui/Card'
 import { rolesApi } from '@/api/users'
 import type { Role } from '@/types'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 export function RoleListPage() {
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ export function RoleListPage() {
       setDeleteTarget(null)
       toast.success('Role deleted.')
     },
-    onError: (err: Error) => toast.error(err.message || 'Cannot delete this role.'),
+    onError: (err: unknown) => toast.error(getErrorMessage(err, 'Cannot delete this role.')),
   })
 
   const roles: Role[] = data ?? []

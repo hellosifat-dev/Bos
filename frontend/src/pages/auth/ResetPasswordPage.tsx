@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input  } from '@/components/ui/Input'
 import { Alert  } from '@/components/ui/Alert'
 import { authApi } from '@/api/auth'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -72,7 +73,7 @@ export function ResetPasswordPage() {
 
       {mutation.error && (
         <Alert variant="error" className="mb-5">
-          {(mutation.error as Error).message || 'Failed to reset password. The link may have expired.'}
+          {getErrorMessage(mutation.error, 'Failed to reset password. The link may have expired.')}
         </Alert>
       )}
 

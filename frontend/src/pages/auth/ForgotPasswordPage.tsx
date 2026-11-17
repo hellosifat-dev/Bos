@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input  } from '@/components/ui/Input'
 import { Alert  } from '@/components/ui/Alert'
 import { authApi } from '@/api/auth'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -70,7 +71,7 @@ export function ForgotPasswordPage() {
 
       {mutation.error && (
         <Alert variant="error" className="mb-5">
-          {(mutation.error as Error).message || 'Something went wrong. Please try again.'}
+          {getErrorMessage(mutation.error, 'Something went wrong. Please try again.')}
         </Alert>
       )}
 

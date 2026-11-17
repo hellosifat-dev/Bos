@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Filter } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Input }      from '@/components/ui/Input'
 import { Select }     from '@/components/ui/Select'
 import { Badge }      from '@/components/ui/Badge'

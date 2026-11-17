@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
-import { Badge } from '@/components/ui/Badge'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -62,7 +62,7 @@ export default function RoleEditPage() {
       navigate('/app/roles')
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to update role'
+      const msg = getErrorMessage(err, 'Failed to update role')
       toast.error(msg)
     },
   })
@@ -130,13 +130,7 @@ export default function RoleEditPage() {
       <Card>
         <CardHeader
           title="Edit Role"
-          subtitle={
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-gray-500">Editing:</span>
-              <span className="text-sm font-medium">{role?.name}</span>
-              <Badge variant="info" size="sm">{role?.slug}</Badge>
-            </div>
-          }
+          subtitle={`Editing: ${role?.name ?? ''} (${role?.slug ?? ''})`}
         />
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardBody className="space-y-4">

@@ -6,14 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
+        'name',
         'first_name',
         'last_name',
         'email',
@@ -66,14 +69,26 @@ class User extends Authenticatable
         ];
     }
 
-    public function getFullNameAttribute(): string
+    /** Full name — the API exposes a single `name`; storage keeps first/last. */
+    protected function name(): Attribute
     {
-        return "{$this->first_name} {$this->last_name}";
+        return Attribute::make(
+            get: fn ($value, array $attrs) => trim(($attrs['first_name'] ?? '') . ' ' . ($attrs['last_name'] ?? '')),
+            set: function (string $value) {
+                $parts = preg_split('/\s+/', trim($value), 2);
+                return [
+                    'first_name' => $parts[0] ?? '',
+                    'last_name'  => $parts[1] ?? '',
+                ];
+            },
+        );
     }
 
-    public function sessions(): HasMany
+    public function roles(): BelongsToMany
     {
-        return $this->hasMany(UserSession::class);
+        return $this->belongsToMany(Role::class, 'user_roles')
+            ->withPivot('business_id', 'branch_id', 'tenant_id')
+            ->withTimestamps();
     }
 
     public function otps(): HasMany

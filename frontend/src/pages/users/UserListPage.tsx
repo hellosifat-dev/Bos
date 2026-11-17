@@ -12,6 +12,7 @@ import type { Column }   from '@/components/ui/Table'
 import { usersApi }      from '@/api/users'
 import type { User }     from '@/types'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/utils/format'
 
 export function UserListPage() {
   const navigate = useNavigate()
@@ -32,7 +33,7 @@ export function UserListPage() {
       setDeleteTarget(null)
       toast.success('User removed.')
     },
-    onError: (err: Error) => toast.error(err.message || 'Failed to remove user.'),
+    onError: (err: unknown) => toast.error(getErrorMessage(err, 'Failed to remove user.')),
   })
 
   const columns: Column<User>[] = [

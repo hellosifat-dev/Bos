@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -59,10 +60,10 @@ export default function BranchEditPage() {
         code: branch.code,
         phone: branch.phone ?? '',
         email: branch.email ?? '',
-        address: branch.address ?? '',
-        city: branch.city ?? '',
-        state: branch.state ?? '',
-        country: branch.country ?? '',
+        address: branch.address?.line1 ?? '',
+        city: branch.address?.city ?? '',
+        state: branch.address?.state ?? '',
+        country: branch.address?.country ?? '',
         is_headquarters: branch.is_headquarters,
       })
     }
@@ -77,13 +78,18 @@ export default function BranchEditPage() {
       navigate('/app/branches')
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to update branch'
+      const msg = getErrorMessage(err, 'Failed to update branch')
       toast.error(msg)
     },
   })
 
   const onSubmit = (data: FormData) => {
-    mutation.mutate(data)
+    const { address, city, state, country, ...rest } = data
+    mutation.mutate({
+      ...rest,
+      email: rest.email || undefined,
+      address: { line1: address, city, state, country },
+    })
   }
 
   if (isLoading) return <PageSpinner />

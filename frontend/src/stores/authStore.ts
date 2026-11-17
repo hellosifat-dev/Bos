@@ -33,7 +33,14 @@ export const useAuthStore = create<AuthStore>()(
 
       setAuth: (user, token) => {
         localStorage.setItem('bos_token', token)
-        set({ user, token, isAuthenticated: true })
+        // Default to the user's primary tenant unless one is already selected.
+        const current = localStorage.getItem('bos_tenant_id')
+        const tenant  = user.tenants?.find((t) => t.is_primary) ?? user.tenants?.[0]
+        if (!current && tenant) localStorage.setItem('bos_tenant_id', String(tenant.id))
+        set((s) => ({
+          user, token, isAuthenticated: true,
+          tenantId: current ?? (tenant ? String(tenant.id) : s.tenantId),
+        }))
       },
 
       setTenant: (tenantId) => {
@@ -43,7 +50,8 @@ export const useAuthStore = create<AuthStore>()(
 
       setBusiness: (business, permissions = []) => {
         localStorage.setItem('bos_business_id', business.id)
-        set({ currentBusiness: business, permissions })
+        localStorage.removeItem('bos_branch_id')
+        set({ currentBusiness: business, permissions, currentBranchId: null })
       },
 
       setBranch: (branchId) => {

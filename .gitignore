@@ -6,3 +6,4 @@ frontend/dist/
 frontend/.env
 .DS_Store
 backend/bootstrap/cache/*.php
+backend/.phpunit.result.cache

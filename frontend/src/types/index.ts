@@ -27,6 +27,7 @@ export interface User {
   two_factor_enabled: boolean
   last_login_at?: string
   roles?: Role[]
+  tenants?: Array<{ id: string; name: string; slug: string; role: string; is_primary: boolean }>
   created_at: string
 }
 

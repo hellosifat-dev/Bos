@@ -11,10 +11,10 @@ class VerifyOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required_without:phone|email',
-            'phone' => 'required_without:email|string',
+            'email' => 'required_without:phone|nullable|email',
+            'phone' => 'required_without:email|nullable|string',
             'code'  => 'required|string|size:6',
-            'type'  => 'required|in:email_verification,phone_verification,password_reset,login',
+            'type'  => 'required|in:email_verification,phone_verification',
         ];
     }
 }

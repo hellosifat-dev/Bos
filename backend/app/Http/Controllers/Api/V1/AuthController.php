@@ -3,208 +3,220 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
-use App\Http\Requests\Auth\VerifyEmailRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Models\UserSession;
 use App\Services\AuthService;
+use App\Services\PermissionService;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
     public function __construct(
-        private AuthService $authService
+        private AuthService $auth,
+        private PermissionService $permissions,
     ) {}
+
+    private function userPayload(User $user): UserResource
+    {
+        return new UserResource($user->load('tenants'));
+    }
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = $this->authService->register($request->validated());
+        $user = $this->auth->register($request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => $result['message'],
-            'data' => [
-                'user' => new UserResource($result['user']),
-            ],
+            'message' => 'Registration successful. Please verify your email.',
+            'data'    => ['user' => $this->userPayload($user)],
         ], 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $deviceInfo = [
-            'device_type' => $request->header('X-Device-Type', 'web'),
-            'device_name' => $request->header('X-Device-Name'),
-            'browser' => $request->header('X-Browser'),
-            'platform' => $request->header('X-Platform'),
-        ];
-
-        $result = $this->authService->login($request->validated(), $deviceInfo);
-
-        if (isset($result['requires_2fa'])) {
-            return response()->json([
-                'success' => true,
-                'requires_2fa' => true,
-                'temp_token' => $result['temp_token'],
-                'user_id' => $result['user_id'],
-                'message' => 'Two-factor authentication required.',
-            ]);
-        }
+        $result = $this->auth->login($request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => 'Login successful.',
-            'data' => [
-                'user' => new UserResource($result['user']),
-                'token' => $result['token'],
-                'refresh_token' => $result['refresh_token'],
-                'expires_at' => $result['expires_at'],
+            'message' => isset($result['requires_otp']) ? 'Please verify your email to continue.' : 'Login successful.',
+            'data'    => [
+                'user'         => $this->userPayload($result['user']),
+                'token'        => $result['token'],
+                'requires_2fa' => $result['requires_2fa'] ?? false,
+                'requires_otp' => $result['requires_otp'] ?? false,
             ],
         ]);
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->bearerToken();
-        if ($token) {
-            $this->authService->logout($request->user(), $token);
-        }
+        $this->auth->logout($request->user());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out successfully.',
-        ]);
-    }
-
-    public function logoutAllDevices(Request $request): JsonResponse
-    {
-        $request->user()->sessions()->update(['is_active' => false]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out from all devices.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Logged out successfully.']);
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => new UserResource($request->user()->load('tenants')),
-        ]);
+        $user = $request->user();
+        $data = $this->userPayload($user)->resolve();
+
+        // When a business context is supplied, include the effective permission list.
+        $businessId = $request->header('X-Business-ID');
+        if ($businessId) {
+            $data['permissions'] = $this->permissions->getUserPermissions($user, (int) $businessId)->values();
+        }
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
-    public function refreshToken(Request $request): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
-        $request->validate(['refresh_token' => 'required|string']);
+        $token = $this->auth->refresh($request->user());
 
-        $result = $this->authService->refreshToken($request->refresh_token);
-
-        return response()->json([
-            'success' => true,
-            'data' => $result,
-        ]);
+        return response()->json(['success' => true, 'data' => ['token' => $token]]);
     }
 
-    public function verifyEmail(VerifyEmailRequest $request): JsonResponse
+    // ── OTP ─────────────────────────────────────────────────────────────────
+
+    public function sendOtp(Request $request): JsonResponse
     {
-        $user = $this->authService->verifyEmail($request->user_id, $request->otp);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Email verified successfully.',
-            'data' => new UserResource($user),
+        $data = $request->validate([
+            'email' => 'required_without:phone|nullable|email',
+            'phone' => 'required_without:email|nullable|string',
+            'type'  => 'required|in:email_verification,phone_verification',
         ]);
+
+        $user = isset($data['email'])
+            ? User::where('email', $data['email'])->first()
+            : User::where('phone', $data['phone'])->first();
+
+        // Do not reveal whether the account exists.
+        if ($user) {
+            $this->auth->sendOtp($user, $data['type']);
+        }
+
+        return response()->json(['success' => true, 'message' => 'If the account exists, a code has been sent.']);
     }
 
-    public function resendEmailVerification(Request $request): JsonResponse
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
-        $request->validate(['email' => 'required|email']);
-        $user = User::where('email', $request->email)->firstOrFail();
-        $this->authService->sendEmailVerificationOtp($user);
+        $data = $request->validated();
+
+        $user = isset($data['email'])
+            ? User::where('email', $data['email'])->first()
+            : User::where('phone', $data['phone'])->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages(['code' => ['Invalid or expired code.']]);
+        }
+
+        $user = $this->auth->verifyOtp($user, $data['type'], $data['code']);
+
+        $token = null;
+        if ($data['type'] === 'email_verification' && $user->status === 'active' && !$user->two_factor_enabled) {
+            $token = $user->createToken('web', ['*'])->plainTextToken;
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Verification email sent.',
+            'message' => 'Verified successfully.',
+            'data'    => ['user' => $this->userPayload($user), 'token' => $token],
         ]);
     }
+
+    // ── Password reset (Laravel broker) ─────────────────────────────────────
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $this->authService->sendPasswordResetOtp($request->email);
+        Password::sendResetLink($request->only('email'));
 
         return response()->json([
             'success' => true,
-            'message' => 'If that email exists, a reset code has been sent.',
+            'message' => 'If that email exists, a reset link has been sent.',
         ]);
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        $this->authService->resetPassword(
-            $request->email,
-            $request->otp,
-            $request->password
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
+                $user->tokens()->delete();
+                event(new PasswordReset($user));
+            }
         );
 
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages(['email' => [__($status)]]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Password reset successfully. Please log in.']);
+    }
+
+    // ── Two-factor ──────────────────────────────────────────────────────────
+
+    public function enable2FA(Request $request): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => $this->auth->beginTwoFactor($request->user())]);
+    }
+
+    public function verify2FA(Request $request): JsonResponse
+    {
+        $data  = $request->validate(['code' => 'required|string']);
+        $user  = $request->user();
+        $token = $this->auth->verifyTwoFactor($user, $data['code']);
+
         return response()->json([
             'success' => true,
-            'message' => 'Password reset successfully. Please log in.',
+            'message' => $token ? 'Login successful.' : 'Two-factor authentication enabled.',
+            'data'    => ['user' => $this->userPayload($user->fresh()), 'token' => $token],
         ]);
     }
 
-    public function verifyTwoFactor(VerifyOtpRequest $request): JsonResponse
+    public function disable2FA(Request $request): JsonResponse
     {
-        $deviceInfo = [
-            'device_type' => $request->header('X-Device-Type', 'web'),
-        ];
+        $data = $request->validate(['code' => 'required|string']);
+        $this->auth->disableTwoFactor($request->user(), $data['code']);
 
-        $result = $this->authService->verifyTwoFactor(
-            $request->user_id,
-            $request->code,
-            $deviceInfo
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Two-factor verification successful.',
-            'data' => [
-                'user' => new UserResource($result['user']),
-                'token' => $result['token'],
-                'refresh_token' => $result['refresh_token'],
-                'expires_at' => $result['expires_at'],
-            ],
-        ]);
+        return response()->json(['success' => true, 'message' => 'Two-factor authentication disabled.']);
     }
 
-    public function activeSessions(Request $request): JsonResponse
-    {
-        $sessions = $request->user()
-            ->sessions()
-            ->where('is_active', true)
-            ->orderByDesc('last_active_at')
-            ->get();
+    // ── Sessions (API tokens) ───────────────────────────────────────────────
 
-        return response()->json([
-            'success' => true,
-            'data' => $sessions,
-        ]);
+    public function sessions(Request $request): JsonResponse
+    {
+        $currentId = $request->user()->currentAccessToken()?->id;
+
+        $sessions = $request->user()->tokens()
+            ->orderByDesc('last_used_at')
+            ->get()
+            ->map(fn (PersonalAccessToken $t) => [
+                'id'           => $t->id,
+                'name'         => $t->name,
+                'last_used_at' => $t->last_used_at,
+                'created_at'   => $t->created_at,
+                'current'      => $t->id === $currentId,
+            ]);
+
+        return response()->json(['success' => true, 'data' => $sessions]);
     }
 
-    public function revokeSession(Request $request, int $sessionId): JsonResponse
+    public function revokeSession(Request $request, int $id): JsonResponse
     {
-        UserSession::where('id', $sessionId)
-            ->where('user_id', $request->user()->id)
-            ->update(['is_active' => false]);
+        $request->user()->tokens()->where('id', $id)->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Session revoked.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Session revoked.']);
     }
 }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input  } from '@/components/ui/Input'
 import { Alert  } from '@/components/ui/Alert'
 import { useAuth } from '@/hooks/useAuth'
+import { getErrorMessage } from '@/utils/format'
 
 const schema = z.object({
   name:     z.string().min(2, 'Name must be at least 2 characters'),
@@ -50,7 +51,7 @@ export function RegisterPage() {
 
       {registerMutation.error && (
         <Alert variant="error" className="mb-5">
-          {(registerMutation.error as Error).message || 'Registration failed. Please try again.'}
+          {getErrorMessage(registerMutation.error, 'Registration failed. Please try again.')}
         </Alert>
       )}
 

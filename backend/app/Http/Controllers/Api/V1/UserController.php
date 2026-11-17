@@ -12,7 +12,7 @@ use App\Services\AuditService;
 use App\Services\PermissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Arr;
 
 class UserController extends Controller
 {
@@ -27,13 +27,15 @@ class UserController extends Controller
         $businessId = $request->header('X-Business-ID');
 
         $users = User::whereHas('tenants', fn($q) => $q->where('tenant_id', $tenantId))
-            ->with(['roles' => fn($q) => $q->where('business_id', $businessId)])
+            ->with(['roles' => fn($q) => $q->wherePivot('business_id', $businessId)])
             ->when($request->search, fn($q) => $q->where(function ($q2) use ($request) {
-                $q2->where('name', 'like', "%{$request->search}%")
-                   ->orWhere('email', 'like', "%{$request->search}%");
+                $term = '%' . strtolower($request->search) . '%';
+                $q2->whereRaw('LOWER(first_name) LIKE ?', [$term])
+                   ->orWhereRaw('LOWER(last_name) LIKE ?', [$term])
+                   ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
             }))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->orderBy('name')
+            ->orderBy('first_name')
             ->paginate($request->per_page ?? 15);
 
         return response()->json([
@@ -53,10 +55,9 @@ class UserController extends Controller
         $data             = $request->validated();
         $tenantId         = $request->header('X-Tenant-ID');
         $businessId       = $request->header('X-Business-ID');
-        $data['password'] = Hash::make($data['password']);
         $data['status']   = 'active';
 
-        $user = User::create($data);
+        $user = User::create(Arr::except($data, ['role_id', 'branch_id', 'department_id', 'send_invitation']));
 
         // Attach to tenant
         $user->tenants()->attach($tenantId, ['role' => 'member', 'status' => 'active', 'joined_at' => now()]);
@@ -77,7 +78,7 @@ class UserController extends Controller
             // TODO: dispatch invitation email job
         }
 
-        $this->auditService->log('create', 'users', $user->id, null, array_except($data, ['password']));
+        $this->auditService->record('create', 'users', $user->id, null, Arr::except($data, ['password']));
 
         return response()->json([
             'success' => true,
@@ -91,7 +92,7 @@ class UserController extends Controller
         $tenantId = $request->header('X-Tenant-ID');
 
         $user = User::whereHas('tenants', fn($q) => $q->where('tenant_id', $tenantId))
-            ->with(['roles', 'sessions'])
+            ->with(['roles' => fn($q) => $q->wherePivot('business_id', $request->header('X-Business-ID'))])
             ->findOrFail($id);
 
         return response()->json([
@@ -111,13 +112,12 @@ class UserController extends Controller
         $data = $request->validated();
 
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        } else {
+            } else {
             unset($data['password']);
         }
 
         $user->update($data);
-        $this->auditService->log('update', 'users', $user->id, $old, array_except($data, ['password']));
+        $this->auditService->record('update', 'users', $user->id, $old, Arr::except($data, ['password']));
 
         return response()->json([
             'success' => true,
@@ -137,7 +137,7 @@ class UserController extends Controller
             return response()->json(['success' => false, 'message' => 'Cannot delete your own account.'], 422);
         }
 
-        $this->auditService->log('delete', 'users', $user->id, $user->toArray(), null);
+        $this->auditService->record('delete', 'users', $user->id, $user->toArray(), null);
         $user->delete();
 
         return response()->json(['success' => true, 'message' => 'User deleted successfully.']);
@@ -159,7 +159,7 @@ class UserController extends Controller
             'tenant_id'   => $tenantId,
         ], ['branch_id' => $request->branch_id]);
 
-        $this->auditService->log('assign_role', 'users', $user->id, null, ['role_id' => $request->role_id]);
+        $this->auditService->record('assign_role', 'users', $user->id, null, ['role_id' => $request->role_id]);
 
         return response()->json(['success' => true, 'message' => 'Role assigned successfully.']);
     }
@@ -177,7 +177,7 @@ class UserController extends Controller
             ->where('tenant_id', $tenantId)
             ->delete();
 
-        $this->auditService->log('revoke_role', 'users', $id, null, ['role_id' => $request->role_id]);
+        $this->auditService->record('revoke_role', 'users', $id, null, ['role_id' => $request->role_id]);
 
         return response()->json(['success' => true, 'message' => 'Role revoked successfully.']);
     }

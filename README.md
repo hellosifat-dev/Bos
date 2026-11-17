@@ -64,6 +64,8 @@ php artisan migrate
 php artisan db:seed        # Seeds permissions + 11 system roles
 
 php artisan serve          # Runs on http://localhost:8000
+
+php vendor/bin/phpunit     # Feature tests (in-memory SQLite)
 ```
 
 ### Frontend
@@ -84,13 +86,17 @@ The Vite dev server proxies `/api` → `http://localhost:8000`.
 Every business table has a `tenant_id` column. The `TenantMiddleware` reads the `X-Tenant-ID` request header, validates the tenant is active, and confirms the authenticated user belongs to it. All queries use the `scopeForTenant()` model scope.
 
 ### Authentication
-- Sanctum token-based auth (not session/cookie)
+- Registering creates the user **and** their tenant (organisation); an email OTP activates the account
+  (in development `MAIL_MAILER=log` writes the code to `storage/logs/laravel.log`)
+- Sanctum token-based auth (not session/cookie); `POST /auth/refresh` rotates the token
+- 2FA is TOTP (RFC 6238). A 2FA login returns a limited `2fa-pending` token that is only accepted by `POST /auth/2fa/verify`
+- Password reset uses Laravel's broker; the emailed link opens `/reset-password?token=…&email=…` in the SPA
 - Tokens stored in `localStorage`; attached via Axios request interceptor
 - 401 responses trigger automatic token refresh with queued request retry
 - Optional: OTP verification + TOTP two-factor authentication
 
 ### RBAC
-Permissions are stored as `module.action` slugs (e.g. `products.create`). Roles are assigned at business or branch scope. The `PermissionService::can()` method checks the user's roles against the required permission for the given scope. The frontend `usePermission` hook mirrors this with wildcard `*` support.
+Permissions are stored as `module.action` slugs (e.g. `branches.create`). Roles are assigned at business or branch scope; business owners and tenant owners implicitly hold every permission. Business-scoped routes are guarded with `permission:<action>,<module>` middleware. `PermissionService::userCan()` checks the user's roles against the required permission for the given scope. The frontend `usePermission` hook mirrors this with wildcard `*` support.
 
 ### Multi-Branch
 `Tenant → Business → Branch` hierarchy. The `X-Business-ID` and `X-Branch-ID` headers scope API calls. The Zustand store tracks the current business and branch, and Axios automatically attaches the headers.
@@ -106,10 +112,15 @@ POST   /api/v1/auth/logout
 GET    /api/v1/auth/me
 POST   /api/v1/auth/forgot-password
 POST   /api/v1/auth/reset-password
-POST   /api/v1/auth/send-otp
-POST   /api/v1/auth/verify-otp
-POST   /api/v1/auth/2fa/enable
-POST   /api/v1/auth/2fa/verify
+POST   /api/v1/auth/send-otp            (email_verification | phone_verification)
+POST   /api/v1/auth/verify-otp          (returns a token once the email is verified)
+POST   /api/v1/auth/refresh
+POST   /api/v1/auth/2fa/enable          (returns TOTP secret + otpauth URL)
+POST   /api/v1/auth/2fa/verify          (activates 2FA, or completes a 2FA login challenge)
+POST   /api/v1/auth/2fa/disable
+GET    /api/v1/auth/sessions
+DELETE /api/v1/auth/sessions/{id}
+GET    /api/v1/dashboard/stats          [X-Business-ID required]
 
 GET    /api/v1/businesses
 POST   /api/v1/businesses

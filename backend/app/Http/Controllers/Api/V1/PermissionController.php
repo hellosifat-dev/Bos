@@ -14,6 +14,7 @@ class PermissionController extends Controller
 
         $grouped = $permissions->groupBy('module')->map(fn($perms) => $perms->map(fn($p) => [
             'id'     => $p->id,
+            'module' => $p->module,
             'name'   => $p->name,
             'slug'   => $p->slug,
             'action' => $p->action,
