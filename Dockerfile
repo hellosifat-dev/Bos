@@ -1,5 +1,6 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# BOS — single container: React SPA + Laravel API behind Nginx/PHP-FPM.
+# BOS — single container: React SPA + Laravel API behind Nginx/PHP-FPM,
+#   plus the project website (site/) served on bos.sifat.codes.
 #   docker build -t bos .
 #   docker run -p 8080:8080 -e DB_HOST=... -e DB_DATABASE=... -e DB_USERNAME=... -e DB_PASSWORD=... bos
 # Listens on $PORT (default 8080). See DEPLOY.md for all variables.
@@ -40,6 +41,7 @@ COPY docker/entrypoint.sh /usr/local/bin/bos-entrypoint
 WORKDIR /var/www/backend
 COPY --from=vendor /app/backend ./
 COPY --from=frontend /app/frontend/dist /var/www/frontend
+COPY site/ /var/www/site
 
 RUN chmod +x /usr/local/bin/bos-entrypoint \
  && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \

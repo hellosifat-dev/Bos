@@ -32,3 +32,23 @@ server {
         deny all;
     }
 }
+
+# Project website (site/ folder), served on its own domain from this same container.
+server {
+    listen ${PORT};
+    server_name bos.sifat.codes;
+
+    root /var/www/site;
+    index index.html;
+    server_tokens off;
+
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /\.(?!well-known) {
+        deny all;
+    }
+}
